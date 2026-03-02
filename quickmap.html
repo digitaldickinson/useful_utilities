@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Photo Map — EXIF/HEIC → Edit → KML + CSV + GeoJSON (Lazy Previews)</title>
+
+  <!-- Tailwind (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- MarkerCluster -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+  <!-- EXIF parsing -->
+  <script src="https://unpkg.com/exifr/dist/full.umd.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+
+  <!-- HEIC -> JPEG conversion -->
+  <script src="https://unpkg.com/heic2any/dist/heic2any.min.js"></script>
+
+  <style>
+    #map { height: calc(100vh - 275px); min-height: 520px; width: 100%; border-radius: 16px; }
+    .leaflet-popup-content { width: 340px !important; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace; }
+    .thumb {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      background: #f1f5f9;
+    }
+    .thumb-skeleton {
+      height: 150px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 37%, #f1f5f9 63%);
+      background-size: 400% 100%;
+      animation: shimmer 1.2s ease-in-out infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: 100% 0; }
+      100% { background-position: 0 0; }
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800">
+  <div class="max-w-7xl mx-auto p-4 md:p-6">
+    <header class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-5 flex flex-col gap-3">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div class="min-w-0">
+          <h1 class="text-xl md:text-2xl font-bold tracking-tight">QuickMap</h1>
+          <p class="text-sm text-slate-500">
+            Load a folder of photos, map them and then export in map friendly formats. No images are uploaded or transfered.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="btnLoad" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-xl">
+            Load folder
+          </button>
+
+          <button id="btnExportKml" disabled class="bg-orange-500 hover:bg-orange-600 disabled:opacity-40 disabled:hover:bg-orange-500 text-white font-semibold px-4 py-2 rounded-xl">
+            Export KML
+          </button>
+
+          <button id="btnExportCsv" disabled class="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:hover:bg-emerald-600 text-white font-semibold px-4 py-2 rounded-xl">
+            Export CSV
+          </button>
+
+          <button id="btnExportGeojson" disabled class="bg-sky-600 hover:bg-sky-700 disabled:opacity-40 disabled:hover:bg-sky-600 text-white font-semibold px-4 py-2 rounded-xl">
+            Export GeoJSON
+          </button>
+
+          <button id="btnResetView" disabled class="bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-slate-700 text-white font-semibold px-4 py-2 rounded-xl">
+            Fit to points
+          </button>
+        </div>
+      </div>
+
+      <div class="flex flex-col md:flex-row md:items-end gap-3 border-t border-slate-200 pt-4">
+        <div class="flex-1">
+          <label class="block text-xs font-semibold text-slate-600">Timezone assumption for EXIF times</label>
+          <p class="text-xs text-slate-500 mt-1">
+            EXIF timestamps often have no timezone. This affects ISO output, sorting, and TimeSpan values.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Assume offset</label>
+            <select id="tzSelect" class="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white">
+              <option value="none">Unknown (no offset in ISO)</option>
+              <option value="+00:00" selected>UTC (+00:00)</option>
+              <option value="+01:00">+01:00</option>
+              <option value="+02:00">+02:00</option>
+              <option value="-01:00">-01:00</option>
+              <option value="-05:00">-05:00</option>
+              <option value="-08:00">-08:00</option>
+              <option value="+05:30">+05:30</option>
+              <option value="+08:00">+08:00</option>
+              <option value="+10:00">+10:00</option>
+            </select>
+          </div>
+
+          <label class="inline-flex items-center gap-2 text-sm select-none">
+            <input id="toggleFolderTimeSpan" type="checkbox" class="accent-indigo-600" checked />
+            Folder TimeSpan
+          </label>
+
+          <label class="inline-flex items-center gap-2 text-sm select-none">
+            <input id="togglePath" type="checkbox" class="accent-indigo-600" />
+            Draw path (by time)
+          </label>
+
+          <label class="inline-flex items-center gap-2 text-sm select-none" title="Limits the number of cached preview images to reduce memory usage.">
+            <input id="toggleCache" type="checkbox" class="accent-indigo-600" checked />
+            Cache previews
+          </label>
+        </div>
+      </div>
+    </header>
+
+    <section class="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <aside class="lg:col-span-4 xl:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+        <div class="flex items-center justify-between gap-2">
+          <h2 class="font-bold">Points</h2>
+          <span id="countBadge" class="text-xs mono text-slate-600 bg-slate-100 border border-slate-200 px-2 py-1 rounded-lg">0 loaded</span>
+        </div>
+
+        <div class="mt-3 flex items-center gap-2">
+          <input id="search"
+            class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            placeholder="Search label / filename…" />
+          <button id="btnClearSearch" class="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm">
+            Clear
+          </button>
+        </div>
+
+        <div class="mt-3 flex items-center justify-between">
+          <button id="btnSortTime" class="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm">
+            Sort by time
+          </button>
+          <span class="text-xs mono text-slate-500" id="tzBadge">TZ: +00:00</span>
+        </div>
+
+        <div id="issues" class="mt-3 hidden rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+          <div class="font-semibold mb-1">Notes</div>
+          <ul class="list-disc pl-5 space-y-1" id="issuesList"></ul>
+        </div>
+
+        <div class="mt-4 border-t border-slate-200 pt-4">
+          <div class="text-xs text-slate-500 mono" id="status">Waiting for folder…</div>
+          <div class="mt-2 h-2 rounded-full bg-slate-100 overflow-hidden border border-slate-200">
+            <div id="progressBar" class="h-full w-0 bg-indigo-600"></div>
+          </div>
+        </div>
+
+        <div class="mt-4 max-h-[55vh] overflow-auto pr-1" id="list"></div>
+
+        <div class="mt-4 text-xs text-slate-500">
+          Popup actions include copy coordinates + Google Maps link.
+        </div>
+      </aside>
+
+      <main class="lg:col-span-8 xl:col-span-9">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3">
+          <div id="map"></div>
+        </div>
+      </main>
+    </section>
+
+    <footer class="mt-6 text-xs text-slate-500 bg-white border border-slate-200 rounded-2xl p-4">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <div>
+          Built with
+          <a class="underline hover:text-slate-700" href="https://leafletjs.com/" target="_blank" rel="noreferrer">Leaflet</a>,
+          <a class="underline hover:text-slate-700" href="https://github.com/Leaflet/Leaflet.markercluster" target="_blank" rel="noreferrer">Leaflet.markercluster</a>,
+          <a class="underline hover:text-slate-700" href="https://github.com/MikeKovarik/exifr" target="_blank" rel="noreferrer">exifr</a>,
+          <a class="underline hover:text-slate-700" href="https://github.com/exif-js/exif-js" target="_blank" rel="noreferrer">exif-js</a>,
+          <a class="underline hover:text-slate-700" href="https://github.com/alexcorvi/heic2any" target="_blank" rel="noreferrer">heic2any</a>,
+          and
+          <a class="underline hover:text-slate-700" href="https://tailwindcss.com/" target="_blank" rel="noreferrer">Tailwind CSS</a>.
+        </div>
+        <div class="mono">Client-side only (no uploads).</div>
+      </div>
+    </footer>
+  </div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  const escapeXml = (unsafe) =>
+    String(unsafe ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&apos;");
+
+  const pad2 = (n) => String(n).padStart(2, "0");
+
+  // ---------- Time parsing / ISO ----------
+  function parseExifDateString(s) {
+    if (!s || typeof s !== "string") return null;
+    const m = s.match(/^(\d{4}):(\d{2}):(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/);
+    if (!m) return null;
+    const [_, Y, Mo, D, h, mi, se] = m;
+    return { Y: +Y, Mo: +Mo, D: +D, h: +h, mi: +mi, se: +se };
+  }
+
+  function tzOffsetToMinutes(tz) {
+    if (!tz || tz === "none") return null;
+    const m = tz.match(/^([+-])(\d{2}):(\d{2})$/);
+    if (!m) return null;
+    const sign = m[1] === "-" ? -1 : 1;
+    return sign * ((+m[2] * 60) + (+m[3]));
+  }
+
+  function buildIsoAndEpochFromExif(exifDateString, tzSelection) {
+    const parts = parseExifDateString(exifDateString);
+    if (!parts) return { iso: null, epochMs: null };
+
+    const { Y, Mo, D, h, mi, se } = parts;
+    const isoBase = `${Y}-${pad2(Mo)}-${pad2(D)}T${pad2(h)}:${pad2(mi)}:${pad2(se)}`;
+
+    if (tzSelection === "none") {
+      return { iso: isoBase, epochMs: Date.UTC(Y, Mo - 1, D, h, mi, se) };
+    }
+
+    const offsetMin = tzOffsetToMinutes(tzSelection);
+    const epochMs = Date.UTC(Y, Mo - 1, D, h, mi, se) - ((offsetMin ?? 0) * 60 * 1000);
+    return { iso: offsetMin === null ? isoBase : `${isoBase}${tzSelection}`, epochMs };
+  }
+
+  function formatTimeForUI(isoOrNull) { return isoOrNull ? isoOrNull : "—"; }
+
+  // ---------- CSV helpers ----------
+  function csvEscape(value) {
+    const s = String(value ?? "");
+    if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+    return s;
+  }
+
+  // ---------- Clipboard helpers ----------
+  async function copyText(text) {
+    const t = String(text ?? "");
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(t);
+        return true;
+      }
+    } catch (_) {}
+
+    // Fallback
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = t;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function toast(message) {
+    const el = document.createElement("div");
+    el.className = "fixed bottom-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm px-4 py-2 rounded-xl shadow-lg z-[9999]";
+    el.textContent = message;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1400);
+  }
+
+  function googleMapsLink(lat, lng) {
+    const la = Number(lat).toFixed(6);
+    const lo = Number(lng).toFixed(6);
+    return `https://www.google.com/maps?q=${encodeURIComponent(la + "," + lo)}`;
+  }
+
+  // ---------- Icons (KML styles) ----------
+  const iconLibrary = {
+    Camera: "http://maps.google.com/mapfiles/kml/shapes/camera.png",
+    Placemark: "http://maps.google.com/mapfiles/kml/pal3/icon21.png",
+    PinYellow: "http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png",
+    Star: "http://maps.google.com/mapfiles/kml/shapes/star.png",
+    Flag: "http://maps.google.com/mapfiles/kml/shapes/flag.png"
+  };
+
+  const leafletMarkerIcon = L.icon({
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  });
+
+  // ---------- State ----------
+  const state = {
+    points: new Map(),
+    order: [],
+    markers: new Map(),
+    issues: [],
+    drawPath: false,
+    folderTimeSpan: true,
+    pathLine: null,
+
+    // id -> FileSystemFileHandle
+    fileHandles: new Map(),
+
+    // preview cache
+    previewCache: new Map(),
+    previewLRU: [],
+    maxPreviewCache: 25
+  };
+
+  // ---------- Map ----------
+  const map = L.map("map", { worldCopyJump: true }).setView([20, 0], 2);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  const cluster = L.markerClusterGroup({ chunkedLoading: true, showCoverageOnHover: false });
+  map.addLayer(cluster);
+
+  // ---------- UI helpers ----------
+  function setStatus(text) { $("status").textContent = text; }
+  function setProgress(pct) { $("progressBar").style.width = `${Math.max(0, Math.min(100, pct))}%`; }
+
+  function updateButtons() {
+    const has = state.points.size > 0;
+    $("btnExportKml").disabled = !has;
+    $("btnExportCsv").disabled = !has;
+    $("btnExportGeojson").disabled = !has;
+    $("btnResetView").disabled = !has;
+  }
+
+  function updateBadge() { $("countBadge").textContent = `${state.points.size} loaded`; }
+
+  function addIssue(msg) {
+    state.issues.push(msg);
+    $("issues").classList.remove("hidden");
+    const li = document.createElement("li");
+    li.textContent = msg;
+    $("issuesList").appendChild(li);
+  }
+
+  function clearIssues() {
+    state.issues = [];
+    $("issues").classList.add("hidden");
+    $("issuesList").innerHTML = "";
+  }
+
+  function revokeAllPreviews() {
+    for (const { url } of state.previewCache.values()) URL.revokeObjectURL(url);
+    state.previewCache.clear();
+    state.previewLRU = [];
+  }
+
+  function clearAll() {
+    revokeAllPreviews();
+    state.points.clear();
+    state.order = [];
+    state.markers.clear();
+    state.fileHandles.clear();
+    clearIssues();
+
+    cluster.clearLayers();
+    if (state.pathLine) { map.removeLayer(state.pathLine); state.pathLine = null; }
+
+    $("list").innerHTML = "";
+    updateBadge();
+    updateButtons();
+    setStatus("Waiting for folder…");
+    setProgress(0);
+  }
+
+  function currentTzSelection() { return $("tzSelect").value; }
+  function updateTzBadge() {
+    const tz = currentTzSelection();
+    $("tzBadge").textContent = `TZ: ${tz === "none" ? "unknown" : tz}`;
+  }
+
+  // ---------- HEIC detection ----------
+  function isHeicLike(name, mime) {
+    const n = (name || "").toLowerCase();
+    const m = (mime || "").toLowerCase();
+    return n.endsWith(".heic") || n.endsWith(".heif") || m.includes("image/heic") || m.includes("image/heif");
+  }
+
+  // ---------- EXIF (best-effort) ----------
+  async function readExifBestEffort(blobOrFile) {
+    try {
+      const gps = await exifr.gps(blobOrFile);
+      const exif = await exifr.parse(blobOrFile, { pick: ["DateTimeOriginal", "DateTime", "GPSAltitude"] });
+
+      const lat = gps?.latitude ?? null;
+      const lng = gps?.longitude ?? null;
+
+      let alt = 0;
+      if (typeof exif?.GPSAltitude === "number" && Number.isFinite(exif.GPSAltitude)) alt = exif.GPSAltitude;
+
+      let exifDateRaw = null;
+      const dto = exif?.DateTimeOriginal ?? exif?.DateTime ?? null;
+      if (dto instanceof Date) {
+        const Y = dto.getFullYear(), Mo = dto.getMonth() + 1, D = dto.getDate();
+        const h = dto.getHours(), mi = dto.getMinutes(), se = dto.getSeconds();
+        exifDateRaw = `${Y}:${pad2(Mo)}:${pad2(D)} ${pad2(h)}:${pad2(mi)}:${pad2(se)}`;
+      } else if (typeof dto === "string") {
+        exifDateRaw = dto;
+      }
+
+      if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng, alt, exifDateRaw };
+    } catch (_) {}
+
+    try {
+      const convertToDecimal = (ref, values) => {
+        if (!values || !ref || values.length < 3) return null;
+        const d = values[0].numerator / values[0].denominator;
+        const m = values[1].numerator / values[1].denominator;
+        const s = values[2].numerator / values[2].denominator;
+        let dec = d + (m / 60) + (s / 3600);
+        return (ref === "S" || ref === "W") ? -dec : dec;
+      };
+      const safeAlt = (altTag) => {
+        if (!altTag) return 0;
+        if (typeof altTag === "number") return altTag;
+        if (altTag.numerator && altTag.denominator) return altTag.numerator / altTag.denominator;
+        return 0;
+      };
+
+      return await new Promise((resolve) => {
+        EXIF.getData(blobOrFile, function() {
+          const lat = convertToDecimal(EXIF.getTag(this, "GPSLatitudeRef"), EXIF.getTag(this, "GPSLatitude"));
+          const lng = convertToDecimal(EXIF.getTag(this, "GPSLongitudeRef"), EXIF.getTag(this, "GPSLongitude"));
+          const alt = safeAlt(EXIF.getTag(this, "GPSAltitude"));
+          const exifDateRaw = EXIF.getTag(this, "DateTimeOriginal") || EXIF.getTag(this, "DateTime") || null;
+
+          if (Number.isFinite(lat) && Number.isFinite(lng)) resolve({ lat, lng, alt, exifDateRaw });
+          else resolve(null);
+        });
+      });
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ---------- Lazy preview pipeline ----------
+  function cacheEnabled() { return $("toggleCache").checked; }
+
+  function touchLRU(id) {
+    const idx = state.previewLRU.indexOf(id);
+    if (idx >= 0) state.previewLRU.splice(idx, 1);
+    state.previewLRU.push(id);
+  }
+
+  function evictIfNeeded() {
+    if (!cacheEnabled()) return;
+    while (state.previewLRU.length > state.maxPreviewCache) {
+      const victim = state.previewLRU.shift();
+      const entry = state.previewCache.get(victim);
+      if (entry?.url) URL.revokeObjectURL(entry.url);
+      state.previewCache.delete(victim);
+    }
+  }
+
+  async function fileFromHandle(id) {
+    const handle = state.fileHandles.get(id);
+    if (!handle) return null;
+    try { return await handle.getFile(); } catch { return null; }
+  }
+
+  async function ensurePreviewUrl(id) {
+    const cached = state.previewCache.get(id);
+    if (cached?.url) {
+      touchLRU(id);
+      return { url: cached.url, note: null };
+    }
+
+    const file = await fileFromHandle(id);
+    if (!file) return null;
+
+    const heic = isHeicLike(file.name, file.type);
+
+    if (!cacheEnabled()) {
+      revokeAllPreviews();
+    }
+
+    try {
+      let blobForPreview = file;
+      if (heic) {
+        const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.82 });
+        blobForPreview = Array.isArray(converted) ? converted[0] : converted;
+      }
+
+      const url = URL.createObjectURL(blobForPreview);
+      state.previewCache.set(id, { url, createdAt: Date.now() });
+      touchLRU(id);
+      evictIfNeeded();
+
+      return { url, note: heic ? "HEIC preview was converted to JPEG in your browser." : null };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ---------- List/Search ----------
+  function currentFilteredOrder() {
+    const q = $("search").value.trim().toLowerCase();
+    if (!q) return state.order.slice();
+    return state.order.filter(id => {
+      const p = state.points.get(id);
+      if (!p) return false;
+      return (p.label || "").toLowerCase().includes(q) || (p.filename || "").toLowerCase().includes(q);
+    });
+  }
+
+  async function focusPoint(id) {
+    const p = state.points.get(id);
+    const m = state.markers.get(id);
+    if (!p || !m) return;
+
+    map.setView([p.lat, p.lng], Math.max(map.getZoom(), 14), { animate: true });
+    m.openPopup();
+    await hydratePopupPreview(id);
+  }
+
+  function renderList() {
+    const holder = $("list");
+    holder.innerHTML = "";
+
+    const ids = currentFilteredOrder();
+    if (ids.length === 0) {
+      holder.innerHTML = `<div class="text-sm text-slate-500">No points match.</div>`;
+      return;
+    }
+
+    for (const id of ids) {
+      const p = state.points.get(id);
+      const row = document.createElement("div");
+      row.className = "group border border-slate-200 rounded-2xl p-3 mb-2 hover:bg-slate-50 cursor-pointer";
+      row.innerHTML = `
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <div class="font-semibold truncate">${escapeXml(p.label || p.filename)}</div>
+            <div class="text-xs text-slate-500 mono truncate">${escapeXml(p.filename)} • ${escapeXml(formatTimeForUI(p.isoTime))}</div>
+          </div>
+          <div class="text-xs mono text-slate-600 bg-slate-100 border border-slate-200 px-2 py-1 rounded-lg">
+            ${Number(p.alt || 0).toFixed(1)}m
+          </div>
+        </div>
+        <div class="mt-2 text-xs text-slate-600 line-clamp-2">${escapeXml(p.desc || "")}</div>
+      `;
+      row.onclick = () => { focusPoint(id); };
+      holder.appendChild(row);
+    }
+  }
+
+  // ---------- Path ----------
+  function rebuildPath() {
+    if (state.pathLine) { map.removeLayer(state.pathLine); state.pathLine = null; }
+    if (!state.drawPath) return;
+
+    const pts = [...state.points.values()].slice().sort((a, b) => {
+      const ta = a.epochMs ?? Number.POSITIVE_INFINITY;
+      const tb = b.epochMs ?? Number.POSITIVE_INFINITY;
+      if (ta !== tb) return ta - tb;
+      return (a.filename || "").localeCompare(b.filename || "");
+    });
+
+    const latlngs = pts.map(p => [p.lat, p.lng]);
+    if (latlngs.length < 2) return;
+    state.pathLine = L.polyline(latlngs, { weight: 3, opacity: 0.8 }).addTo(map);
+  }
+
+  // ---------- Popup / lazy preview DOM ----------
+  function popupHtml(p) {
+    const heicNote = p.isHeicLike ? `<div class="text-[11px] text-amber-700 mt-1">Preview will be converted from HEIC on demand.</div>` : "";
+    return `
+      <div class="flex flex-col gap-2">
+        <div class="thumb-skeleton" data-thumb-skeleton="1"></div>
+        <img class="thumb hidden" data-thumb-img="1" alt="preview" />
+        <div class="text-xs text-slate-500 mono hidden" data-thumb-note="1"></div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div class="col-span-2">
+            <label class="text-[10px] font-bold uppercase text-slate-400">Label</label>
+            <input class="w-full border border-slate-200 p-2 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              data-edit="label" value="${escapeXml(p.label || "")}" />
+          </div>
+
+          <div class="col-span-2">
+            <label class="text-[10px] font-bold uppercase text-slate-400">Description (optional)</label>
+            <textarea rows="2" class="w-full border border-slate-200 p-2 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              data-edit="desc" placeholder="Notes for this placemark…">${escapeXml(p.desc || "")}</textarea>
+          </div>
+
+          <div>
+            <label class="text-[10px] font-bold uppercase text-slate-400">Altitude (m)</label>
+            <input type="number" step="0.1" class="w-full border border-slate-200 p-2 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              data-edit="alt" value="${escapeXml(p.alt ?? 0)}" />
+          </div>
+
+          <div>
+            <label class="text-[10px] font-bold uppercase text-slate-400">Icon</label>
+            <select class="w-full border border-slate-200 p-2 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              data-edit="icon">
+              ${Object.keys(iconLibrary).map(k => `<option value="${k}" ${p.iconKey === k ? "selected" : ""}>${k}</option>`).join("")}
+            </select>
+          </div>
+
+          <div class="col-span-2">
+            <div class="text-[10px] font-bold uppercase text-slate-400">Time (ISO)</div>
+            <div class="mono text-xs text-slate-600 bg-slate-100 border border-slate-200 rounded-xl p-2">
+              <div>${escapeXml(formatTimeForUI(p.isoTime))}</div>
+              <div class="text-[11px] text-slate-500 mt-1">Raw EXIF: ${escapeXml(p.exifDateRaw || "—")}</div>
+              ${heicNote}
+            </div>
+          </div>
+
+          <div class="col-span-2">
+            <div class="text-[10px] font-bold uppercase text-slate-400">Coordinates (drag marker to change)</div>
+            <div class="mono text-xs text-slate-600 bg-slate-100 border border-slate-200 rounded-xl p-2">
+              <div>lat: <span data-coord="lat">${p.lat.toFixed(6)}</span></div>
+              <div>lng: <span data-coord="lng">${p.lng.toFixed(6)}</span></div>
+            </div>
+          </div>
+
+          <div class="col-span-2">
+            <div class="text-[10px] font-bold uppercase text-slate-400">Quick copy</div>
+            <div class="grid grid-cols-2 gap-2">
+              <button class="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm" data-action="copy-coords">Copy coords</button>
+              <button class="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm" data-action="copy-gmaps">Copy Maps link</button>
+              <button class="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm col-span-2" data-action="copy-time">Copy ISO time</button>
+            </div>
+          </div>
+
+          <div class="col-span-2 flex items-center justify-between gap-2 pt-1">
+            <button class="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm" data-action="zoom">Zoom</button>
+            <button class="px-3 py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-sm" data-action="remove">Remove</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  async function hydratePopupPreview(id) {
+    const marker = state.markers.get(id);
+    const p = state.points.get(id);
+    if (!marker || !p) return;
+
+    const popup = marker.getPopup();
+    if (!popup || !popup.isOpen()) return;
+
+    const el = popup.getElement();
+    if (!el) return;
+
+    const img = el.querySelector('[data-thumb-img="1"]');
+    const skeleton = el.querySelector('[data-thumb-skeleton="1"]');
+    if (!img || !skeleton) return;
+    if (!img.classList.contains("hidden") && img.src) return;
+
+    const res = await ensurePreviewUrl(id);
+    if (!res?.url) {
+      skeleton.classList.add("hidden");
+      const note = el.querySelector('[data-thumb-note="1"]');
+      if (note) {
+        note.textContent = "Preview unavailable (conversion failed or file not accessible).";
+        note.classList.remove("hidden");
+      }
+      return;
+    }
+
+    if (!popup.isOpen()) return;
+
+    img.src = res.url;
+    img.classList.remove("hidden");
+    skeleton.classList.add("hidden");
+
+    const note = el.querySelector('[data-thumb-note="1"]');
+    if (note && res.note) {
+      note.textContent = res.note;
+      note.classList.remove("hidden");
+    }
+  }
+
+  // ---------- Marker wiring ----------
+  function addPoint(p) {
+    state.points.set(p.id, p);
+    state.order.push(p.id);
+
+    const marker = L.marker([p.lat, p.lng], { draggable: true, icon: leafletMarkerIcon });
+
+    marker.on("dragend", () => {
+      const ll = marker.getLatLng();
+      p.lat = ll.lat;
+      p.lng = ll.lng;
+
+      const pop = marker.getPopup();
+      if (pop && pop.isOpen()) {
+        const el = pop.getElement();
+        if (el) {
+          const latEl = el.querySelector('[data-coord="lat"]');
+          const lngEl = el.querySelector('[data-coord="lng"]');
+          if (latEl) latEl.textContent = p.lat.toFixed(6);
+          if (lngEl) lngEl.textContent = p.lng.toFixed(6);
+        }
+      }
+      rebuildPath();
+    });
+
+    marker.on("popupopen", async () => {
+      const pop = marker.getPopup();
+      const el = pop?.getElement();
+      if (!el) return;
+
+      hydratePopupPreview(p.id);
+
+      const labelEl = el.querySelector('[data-edit="label"]');
+      const descEl  = el.querySelector('[data-edit="desc"]');
+      const altEl   = el.querySelector('[data-edit="alt"]');
+      const iconEl  = el.querySelector('[data-edit="icon"]');
+
+      if (labelEl) labelEl.oninput = (e) => { p.label = e.target.value; renderList(); };
+      if (descEl)  descEl.oninput  = (e) => { p.desc  = e.target.value; renderList(); };
+      if (altEl)   altEl.oninput   = (e) => { p.alt   = parseFloat(e.target.value || "0") || 0; renderList(); };
+      if (iconEl)  iconEl.onchange = (e) => { p.iconKey = e.target.value; };
+
+      const zoomBtn = el.querySelector('[data-action="zoom"]');
+      const remBtn  = el.querySelector('[data-action="remove"]');
+
+      const copyCoordsBtn = el.querySelector('[data-action="copy-coords"]');
+      const copyGmapsBtn  = el.querySelector('[data-action="copy-gmaps"]');
+      const copyTimeBtn   = el.querySelector('[data-action="copy-time"]');
+
+      if (zoomBtn) zoomBtn.onclick = () => focusPoint(p.id);
+      if (remBtn)  remBtn.onclick  = () => removePoint(p.id);
+
+      if (copyCoordsBtn) copyCoordsBtn.onclick = async () => {
+        const txt = `${Number(p.lat).toFixed(6)}, ${Number(p.lng).toFixed(6)}`;
+        const ok = await copyText(txt);
+        toast(ok ? "Copied coordinates" : "Copy failed");
+      };
+
+      if (copyGmapsBtn) copyGmapsBtn.onclick = async () => {
+        const link = googleMapsLink(p.lat, p.lng);
+        const ok = await copyText(link);
+        toast(ok ? "Copied Google Maps link" : "Copy failed");
+      };
+
+      if (copyTimeBtn) copyTimeBtn.onclick = async () => {
+        const txt = p.isoTime || "";
+        const ok = await copyText(txt);
+        toast(ok ? "Copied ISO time" : "Copy failed");
+      };
+    });
+
+    marker.bindPopup(popupHtml(p));
+    cluster.addLayer(marker);
+    state.markers.set(p.id, marker);
+  }
+
+  function removePoint(id) {
+    const p = state.points.get(id);
+    if (!p) return;
+
+    const m = state.markers.get(id);
+    if (m) cluster.removeLayer(m);
+
+    state.points.delete(id);
+    state.markers.delete(id);
+    state.order = state.order.filter(x => x !== id);
+    state.fileHandles.delete(id);
+
+    const entry = state.previewCache.get(id);
+    if (entry?.url) URL.revokeObjectURL(entry.url);
+    state.previewCache.delete(id);
+    state.previewLRU = state.previewLRU.filter(x => x !== id);
+
+    updateBadge();
+    updateButtons();
+    renderList();
+    rebuildPath();
+
+    if (state.points.size === 0) {
+      setStatus("No points left.");
+      setProgress(0);
+    } else {
+      setStatus(`Loaded ${state.points.size} editable point(s).`);
+    }
+  }
+
+  function fitToPoints() {
+    const latlngs = [...state.points.values()].map(p => [p.lat, p.lng]);
+    if (!latlngs.length) return;
+    map.fitBounds(L.latLngBounds(latlngs).pad(0.15));
+  }
+
+  // ---------- Sorting ----------
+  function sortByTime() {
+    state.order = [...state.points.values()].sort((a, b) => {
+      const ta = a.epochMs ?? Number.POSITIVE_INFINITY;
+      const tb = b.epochMs ?? Number.POSITIVE_INFINITY;
+      if (ta !== tb) return ta - tb;
+      return (a.filename || "").localeCompare(b.filename || "");
+    }).map(p => p.id);
+
+    renderList();
+    rebuildPath();
+  }
+
+  // ---------- KML TimeSpan ----------
+  function buildTimeSpanXml(iso) {
+    if (!iso) return "";
+    return `
+      <TimeSpan>
+        <begin>${escapeXml(iso)}</begin>
+        <end>${escapeXml(iso)}</end>
+      </TimeSpan>`;
+  }
+
+  function computeFolderTimeSpan() {
+    const timed = [...state.points.values()].filter(p => p.isoTime && typeof p.epochMs === "number");
+    if (timed.length === 0) return null;
+    timed.sort((a, b) => a.epochMs - b.epochMs);
+    return { beginIso: timed[0].isoTime, endIso: timed[timed.length - 1].isoTime };
+  }
+
+  function buildKml() {
+    const tzSel = currentTzSelection();
+    const folderSpan = state.folderTimeSpan ? computeFolderTimeSpan() : null;
+
+    const styles = Object.entries(iconLibrary).map(([key, url]) => `
+    <Style id="style_${escapeXml(key)}">
+      <IconStyle><scale>1.2</scale><Icon><href>${escapeXml(url)}</href></Icon></IconStyle>
+      <LabelStyle><scale>1.0</scale></LabelStyle>
+    </Style>`).join("\n");
+
+    const placemarks = [...state.points.values()].map(p => {
+      const alt = Number(p.alt || 0);
+      const altitudeMode = alt === 0 ? "clampToGround" : "absolute";
+      const description = p.desc ? `<description><![CDATA[${p.desc}]]></description>` : "";
+      const timeSpan = buildTimeSpanXml(p.isoTime);
+
+      const extendedData = `
+      <ExtendedData>
+        <Data name="filename"><value>${escapeXml(p.filename)}</value></Data>
+        <Data name="timeISO"><value>${escapeXml(p.isoTime || "")}</value></Data>
+        <Data name="exifDateRaw"><value>${escapeXml(p.exifDateRaw || "")}</value></Data>
+        <Data name="timezoneAssumption"><value>${escapeXml(tzSel)}</value></Data>
+        <Data name="mime"><value>${escapeXml(p.mime)}</value></Data>
+        <Data name="fileSizeBytes"><value>${escapeXml(p.fileSize)}</value></Data>
+        <Data name="isHeicLike"><value>${escapeXml(String(!!p.isHeicLike))}</value></Data>
+      </ExtendedData>`;
+
+      return `
+    <Placemark>
+      <name>${escapeXml(p.label || p.filename)}</name>
+      ${description}
+      <styleUrl>#style_${escapeXml(p.iconKey || "Camera")}</styleUrl>
+      ${timeSpan}
+      ${extendedData}
+      <Point>
+        <extrude>1</extrude>
+        <altitudeMode>${altitudeMode}</altitudeMode>
+        <coordinates>${p.lng},${p.lat},${alt.toFixed(1)}</coordinates>
+      </Point>
+    </Placemark>`;
+    }).join("\n");
+
+    let pathBlock = "";
+    if (state.drawPath && state.points.size >= 2) {
+      const pts = [...state.points.values()].slice().sort((a, b) => {
+        const ta = a.epochMs ?? Number.POSITIVE_INFINITY;
+        const tb = b.epochMs ?? Number.POSITIVE_INFINITY;
+        if (ta !== tb) return ta - tb;
+        return (a.filename || "").localeCompare(b.filename || "");
+      });
+      const coords = pts.map(p => `${p.lng},${p.lat},0`).join(" ");
+
+      const firstIso = pts.find(p => p.isoTime)?.isoTime || null;
+      const lastIso  = [...pts].reverse().find(p => p.isoTime)?.isoTime || null;
+      const pathTime = (firstIso && lastIso && firstIso !== lastIso)
+        ? `<TimeSpan><begin>${escapeXml(firstIso)}</begin><end>${escapeXml(lastIso)}</end></TimeSpan>`
+        : (firstIso ? buildTimeSpanXml(firstIso) : "");
+
+      pathBlock = `
+    <Placemark>
+      <name>Photo Path</name>
+      ${pathTime}
+      <Style><LineStyle><width>3</width></LineStyle></Style>
+      <LineString><tessellate>1</tessellate><coordinates>${coords}</coordinates></LineString>
+    </Placemark>`;
+    }
+
+    const folderTimeSpan = (folderSpan && folderSpan.beginIso && folderSpan.endIso)
+      ? `<TimeSpan><begin>${escapeXml(folderSpan.beginIso)}</begin><end>${escapeXml(folderSpan.endIso)}</end></TimeSpan>`
+      : "";
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Photo Map Export</name>
+    ${styles}
+    <Folder>
+      <name>Photo Points</name>
+      ${folderTimeSpan}
+      ${placemarks}
+      ${pathBlock}
+    </Folder>
+  </Document>
+</kml>`;
+  }
+
+  function downloadText(filename, mimeType, text) {
+    const blob = new Blob([text], { type: mimeType });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+  }
+
+  function exportKml() {
+    downloadText("photo_map_export_timespan.kml", "application/vnd.google-earth.kml+xml", buildKml());
+  }
+
+  // ---------- CSV export ----------
+  function buildCsv() {
+    const tzSel = currentTzSelection();
+    const headers = [
+      "label","latitude","longitude","altitude_m","time_iso","description",
+      "filename","exif_time_raw","timezone_assumption","icon_key","is_heic_like","mime","file_size_bytes"
+    ];
+    const rows = [headers.join(",")];
+
+    const pts = [...state.points.values()].slice().sort((a,b) => {
+      const ta = a.epochMs ?? Number.POSITIVE_INFINITY;
+      const tb = b.epochMs ?? Number.POSITIVE_INFINITY;
+      if (ta !== tb) return ta - tb;
+      return (a.filename || "").localeCompare(b.filename || "");
+    });
+
+    for (const p of pts) {
+      rows.push([
+        csvEscape(p.label || ""),
+        csvEscape(Number(p.lat).toFixed(6)),
+        csvEscape(Number(p.lng).toFixed(6)),
+        csvEscape(Number(p.alt || 0).toFixed(1)),
+        csvEscape(p.isoTime || ""),
+        csvEscape(p.desc || ""),
+        csvEscape(p.filename || ""),
+        csvEscape(p.exifDateRaw || ""),
+        csvEscape(tzSel),
+        csvEscape(p.iconKey || ""),
+        csvEscape(String(!!p.isHeicLike)),
+        csvEscape(p.mime || ""),
+        csvEscape(String(p.fileSize ?? ""))
+      ].join(","));
+    }
+
+    return rows.join("\n");
+  }
+
+  function exportCsv() {
+    downloadText("photo_map_export.csv", "text/csv;charset=utf-8", buildCsv());
+  }
+
+  // ---------- GeoJSON export ----------
+  function buildGeoJSON() {
+    const tzSel = currentTzSelection();
+
+    const features = [...state.points.values()].map(p => {
+      const coords = [Number(p.lng), Number(p.lat)];
+      // include altitude if non-zero (or always include if you prefer)
+      const alt = Number(p.alt || 0);
+      if (Number.isFinite(alt) && alt !== 0) coords.push(Number(alt.toFixed(1)));
+
+      return {
+        type: "Feature",
+        geometry: { type: "Point", coordinates: coords },
+        properties: {
+          id: p.id,
+          label: p.label || p.filename,
+          description: p.desc || "",
+          filename: p.filename || "",
+          time_iso: p.isoTime || "",
+          exif_time_raw: p.exifDateRaw || "",
+          timezone_assumption: tzSel,
+          icon_key: p.iconKey || "",
+          is_heic_like: !!p.isHeicLike,
+          mime: p.mime || "",
+          file_size_bytes: p.fileSize ?? null
+        }
+      };
+    });
+
+    return {
+      type: "FeatureCollection",
+      name: "Photo Map Export",
+      features
+    };
+  }
+
+  function exportGeoJSON() {
+    const geo = buildGeoJSON();
+    downloadText("photo_map_export.geojson", "application/geo+json;charset=utf-8", JSON.stringify(geo, null, 2));
+  }
+
+  // ---------- Timezone change recompute ----------
+  function recomputeTimesForAllPoints() {
+    const tzSel = currentTzSelection();
+    for (const p of state.points.values()) {
+      const res = buildIsoAndEpochFromExif(p.exifDateRaw, tzSel);
+      p.isoTime = res.iso;
+      p.epochMs = res.epochMs;
+    }
+    sortByTime();
+  }
+
+  // ---------- Folder load ----------
+  async function loadFolder() {
+    clearAll();
+
+    if (!("showDirectoryPicker" in window)) {
+      addIssue("Folder picking not supported. Try Chrome/Edge desktop.");
+      setStatus("Folder picker not supported in this browser.");
+      return;
+    }
+
+    let dirHandle;
+    try { dirHandle = await window.showDirectoryPicker(); }
+    catch { setStatus("Folder selection cancelled."); return; }
+
+    const entries = [];
+    for await (const entry of dirHandle.values()) {
+      if (entry.kind === "file" && /\.(jpg|jpeg|heic|heif)$/i.test(entry.name)) entries.push(entry);
+    }
+
+    if (entries.length === 0) {
+      addIssue("No .jpg/.jpeg/.heic/.heif files found.");
+      setStatus("No eligible images found.");
+      return;
+    }
+
+    const tzSel = currentTzSelection();
+    setStatus(`Found ${entries.length} images. Reading EXIF (no previews yet)…`);
+    setProgress(2);
+
+    let loaded = 0, gpsMissing = 0, heicCount = 0, heicExifFallbacks = 0;
+
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+
+      state.fileHandles.set(entry.name, entry);
+
+      const file = await entry.getFile();
+      const heic = isHeicLike(file.name, file.type);
+      if (heic) heicCount++;
+
+      let exif = await readExifBestEffort(file);
+
+      if (!exif && heic) {
+        try {
+          const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
+          const jpegBlob = Array.isArray(converted) ? converted[0] : converted;
+          exif = await readExifBestEffort(jpegBlob);
+          heicExifFallbacks++;
+        } catch (_) {
+          exif = null;
+        }
+      }
+
+      if (exif && Number.isFinite(exif.lat) && Number.isFinite(exif.lng)) {
+        const alt = Number.isFinite(exif.alt) ? Number(exif.alt.toFixed(1)) : 0;
+        const { iso, epochMs } = buildIsoAndEpochFromExif(exif.exifDateRaw, tzSel);
+
+        addPoint({
+          id: entry.name,
+          filename: entry.name,
+          label: entry.name,
+          desc: "",
+          lat: exif.lat,
+          lng: exif.lng,
+          alt,
+          exifDateRaw: exif.exifDateRaw || null,
+          isoTime: iso,
+          epochMs,
+          iconKey: "Camera",
+          fileSize: file.size,
+          mime: file.type || "image/*",
+          isHeicLike: heic
+        });
+
+        loaded++;
+      } else {
+        gpsMissing++;
+      }
+
+      const pct = 5 + Math.round(((i + 1) / entries.length) * 95);
+      setProgress(pct);
+    }
+
+    updateBadge();
+    updateButtons();
+
+    if (gpsMissing) addIssue(`${gpsMissing} image(s) had no GPS EXIF and were skipped.`);
+    if (heicCount) addIssue(`${heicCount} HEIC/HEIF file(s) detected. Previews convert lazily on click.`);
+    if (heicExifFallbacks) addIssue(`${heicExifFallbacks} HEIC file(s) needed a conversion fallback just to read GPS/time (browser limitation).`);
+
+    if (loaded === 0) {
+      setStatus("No GPS-tagged photos found.");
+      setProgress(0);
+      return;
+    }
+
+    setStatus(`Loaded ${loaded} point(s). Previews load on demand.`);
+    sortByTime();
+    renderList();
+    rebuildPath();
+    fitToPoints();
+  }
+
+  // ---------- Events ----------
+  $("btnLoad").addEventListener("click", loadFolder);
+  $("btnExportKml").addEventListener("click", exportKml);
+  $("btnExportCsv").addEventListener("click", exportCsv);
+  $("btnExportGeojson").addEventListener("click", exportGeoJSON);
+  $("btnResetView").addEventListener("click", fitToPoints);
+
+  $("btnClearSearch").addEventListener("click", () => { $("search").value = ""; renderList(); });
+  $("search").addEventListener("input", renderList);
+
+  $("btnSortTime").addEventListener("click", sortByTime);
+
+  $("togglePath").addEventListener("change", (e) => { state.drawPath = !!e.target.checked; rebuildPath(); });
+  $("toggleFolderTimeSpan").addEventListener("change", (e) => { state.folderTimeSpan = !!e.target.checked; });
+
+  $("tzSelect").addEventListener("change", () => {
+    updateTzBadge();
+    if (state.points.size > 0) recomputeTimesForAllPoints();
+  });
+
+  $("toggleCache").addEventListener("change", () => {
+    if (!cacheEnabled()) revokeAllPreviews();
+  });
+
+  updateTzBadge();
+  updateButtons();
+  updateBadge();
+})();
+</script>
+</body>
+</html>
