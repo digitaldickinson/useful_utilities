@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Photo Map — EXIF/HEIC → Edit → KML + CSV + GeoJSON (Lazy Previews)</title>
+  <title>Quick Map - quickly geolocate a folder of images</title>
 
   <!-- Tailwind (CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -25,7 +25,7 @@
   <script src="https://unpkg.com/heic2any/dist/heic2any.min.js"></script>
 
   <style>
-    #map { height: calc(100vh - 275px); min-height: 520px; width: 100%; border-radius: 16px; }
+    #map { height: calc(100vh - 295px); min-height: 520px; width: 100%; border-radius: 16px; }
     .leaflet-popup-content { width: 340px !important; }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace; }
     .thumb {
@@ -44,10 +44,10 @@
       background-size: 400% 100%;
       animation: shimmer 1.2s ease-in-out infinite;
     }
-    @keyframes shimmer {
-      0% { background-position: 100% 0; }
-      100% { background-position: 0 0; }
-    }
+    @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+
+    .drop-zone { border: 2px dashed #cbd5e1; background: #f8fafc; }
+    .drop-zone.dragover { border-color: #6366f1; background: #eef2ff; }
   </style>
 </head>
 
@@ -58,13 +58,13 @@
         <div class="min-w-0">
           <h1 class="text-xl md:text-2xl font-bold tracking-tight">QuickMap</h1>
           <p class="text-sm text-slate-500">
-            Load a folder of photos, map them and then export in map friendly formats. No images are uploaded or transfered.
+           Add a folder of images and the app will generate structured Geo-data suitable for mapping apps like Google Earth and others.
           </p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
           <button id="btnLoad" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-xl">
-            Load folder
+           Select Folder
           </button>
 
           <button id="btnExportKml" disabled class="bg-orange-500 hover:bg-orange-600 disabled:opacity-40 disabled:hover:bg-orange-500 text-white font-semibold px-4 py-2 rounded-xl">
@@ -89,7 +89,7 @@
         <div class="flex-1">
           <label class="block text-xs font-semibold text-slate-600">Timezone assumption for EXIF times</label>
           <p class="text-xs text-slate-500 mt-1">
-            EXIF timestamps often have no timezone. This affects ISO output, sorting, and TimeSpan values.
+            EXIF timestamps often have no timezone. This affects ISO output, sorting, and KML TimeSpan values.
           </p>
         </div>
 
@@ -120,7 +120,7 @@
             Draw path (by time)
           </label>
 
-          <label class="inline-flex items-center gap-2 text-sm select-none" title="Limits the number of cached preview images to reduce memory usage.">
+          <label class="inline-flex items-center gap-2 text-sm select-none" title="Limits cached previews to reduce memory use.">
             <input id="toggleCache" type="checkbox" class="accent-indigo-600" checked />
             Cache previews
           </label>
@@ -128,11 +128,47 @@
       </div>
     </header>
 
+    <!-- Hidden pickers for Safari / fallback -->
+    <input id="folderPicker" type="file" multiple webkitdirectory accept="image/*,.heic,.heif,.jpg,.jpeg" class="hidden" />
+    <input id="filePicker" type="file" multiple accept="image/*,.heic,.heif,.jpg,.jpeg" class="hidden" />
+
     <section class="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
       <aside class="lg:col-span-4 xl:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
         <div class="flex items-center justify-between gap-2">
           <h2 class="font-bold">Points</h2>
           <span id="countBadge" class="text-xs mono text-slate-600 bg-slate-100 border border-slate-200 px-2 py-1 rounded-lg">0 loaded</span>
+        </div>
+
+        <!-- Drag/drop zone -->
+        <div id="dropZone" class="drop-zone mt-3 rounded-2xl p-3 text-sm text-slate-600">
+          <div class="font-semibold text-slate-700">Drag & drop photos or a folder here</div>
+          <div class="text-xs text-slate-500 mt-1">Chrome/Edge supports folder drop. Safari may only accept files.</div>
+        </div>
+
+        <!-- Stats card -->
+        <div id="statsCard" class="mt-3 rounded-2xl border border-slate-200 bg-white p-3">
+          <div class="flex items-center justify-between">
+            <div class="font-bold text-slate-800">Summary</div>
+            <div id="statsPoints" class="text-xs mono text-slate-600 bg-slate-100 border border-slate-200 px-2 py-1 rounded-lg">0</div>
+          </div>
+
+          <div class="mt-2 grid grid-cols-1 gap-2 text-sm">
+            <div class="rounded-xl bg-slate-50 border border-slate-200 p-2">
+              <div class="text-[10px] font-bold uppercase text-slate-400">Time span</div>
+              <div id="statsTime" class="mono text-xs text-slate-700 whitespace-pre-wrap">—</div>
+            </div>
+
+            <div class="rounded-xl bg-slate-50 border border-slate-200 p-2">
+              <div class="text-[10px] font-bold uppercase text-slate-400">Bounding box</div>
+              <div id="statsBbox" class="mono text-xs text-slate-700 whitespace-pre-wrap">—</div>
+            </div>
+
+            <div class="rounded-xl bg-slate-50 border border-slate-200 p-2">
+              <div class="text-[10px] font-bold uppercase text-slate-400">Path length</div>
+              <div id="statsPath" class="mono text-xs text-slate-700 whitespace-pre-wrap">—</div>
+              <div class="text-[11px] text-slate-500 mt-1">Shown when “Draw path” is enabled.</div>
+            </div>
+          </div>
         </div>
 
         <div class="mt-3 flex items-center gap-2">
@@ -157,7 +193,7 @@
         </div>
 
         <div class="mt-4 border-t border-slate-200 pt-4">
-          <div class="text-xs text-slate-500 mono" id="status">Waiting for folder…</div>
+          <div class="text-xs text-slate-500 mono" id="status">Waiting for photos…</div>
           <div class="mt-2 h-2 rounded-full bg-slate-100 overflow-hidden border border-slate-200">
             <div id="progressBar" class="h-full w-0 bg-indigo-600"></div>
           </div>
@@ -166,7 +202,7 @@
         <div class="mt-4 max-h-[55vh] overflow-auto pr-1" id="list"></div>
 
         <div class="mt-4 text-xs text-slate-500">
-          Popup actions include copy coordinates + Google Maps link.
+          Popup actions: copy coordinates, copy Google Maps link, copy ISO time. Previews load on demand.
         </div>
       </aside>
 
@@ -254,13 +290,8 @@
   async function copyText(text) {
     const t = String(text ?? "");
     try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(t);
-        return true;
-      }
+      if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(t); return true; }
     } catch (_) {}
-
-    // Fallback
     try {
       const ta = document.createElement("textarea");
       ta.value = t;
@@ -272,9 +303,7 @@
       const ok = document.execCommand("copy");
       document.body.removeChild(ta);
       return ok;
-    } catch (_) {
-      return false;
-    }
+    } catch (_) { return false; }
   }
 
   function toast(message) {
@@ -320,10 +349,11 @@
     folderTimeSpan: true,
     pathLine: null,
 
-    // id -> FileSystemFileHandle
-    fileHandles: new Map(),
+    // Unified file sources:
+    fileHandles: new Map(), // id -> FileSystemFileHandle (Chrome folder picker / folder drop)
+    files: new Map(),       // id -> File (Safari fallback)
 
-    // preview cache
+    // Preview cache
     previewCache: new Map(),
     previewLRU: [],
     maxPreviewCache: 25
@@ -379,16 +409,17 @@
     state.order = [];
     state.markers.clear();
     state.fileHandles.clear();
+    state.files.clear();
     clearIssues();
 
     cluster.clearLayers();
     if (state.pathLine) { map.removeLayer(state.pathLine); state.pathLine = null; }
 
     $("list").innerHTML = "";
-    updateBadge();
     updateButtons();
-    setStatus("Waiting for folder…");
+    setStatus("Waiting for photos…");
     setProgress(0);
+    renderStats();
   }
 
   function currentTzSelection() { return $("tzSelect").value; }
@@ -397,11 +428,110 @@
     $("tzBadge").textContent = `TZ: ${tz === "none" ? "unknown" : tz}`;
   }
 
-  // ---------- HEIC detection ----------
+  // ---------- File support + IDs ----------
+  function isSupportedImage(file) {
+    const n = (file?.name || "").toLowerCase();
+    const t = (file?.type || "").toLowerCase();
+    return n.endsWith(".jpg") || n.endsWith(".jpeg") || n.endsWith(".heic") || n.endsWith(".heif") ||
+      (t.startsWith("image/") && (t.includes("jpeg") || t.includes("heic") || t.includes("heif") || t.includes("jpg") || t.includes("png") || t.includes("webp")));
+  }
+
   function isHeicLike(name, mime) {
     const n = (name || "").toLowerCase();
     const m = (mime || "").toLowerCase();
     return n.endsWith(".heic") || n.endsWith(".heif") || m.includes("image/heic") || m.includes("image/heif");
+  }
+
+  function makeFileId(file, index) {
+    const rel = file?.webkitRelativePath && file.webkitRelativePath.length ? file.webkitRelativePath : null;
+    if (rel) return rel;
+    return `${file.name}::${file.lastModified || 0}::${file.size || 0}::${index}`;
+  }
+
+  async function getFileById(id) {
+    const h = state.fileHandles.get(id);
+    if (h) { try { return await h.getFile(); } catch (_) {} }
+    return state.files.get(id) || null;
+  }
+
+  // ---------- Basic stats ----------
+  function haversineKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const toRad = (d) => (d * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(a));
+  }
+
+  function formatDuration(ms) {
+    if (!Number.isFinite(ms) || ms < 0) return "";
+    const s = Math.floor(ms / 1000);
+    const mins = Math.floor(s / 60);
+    const hrs = Math.floor(mins / 60);
+    const days = Math.floor(hrs / 24);
+    const remH = hrs % 24;
+    const remM = mins % 60;
+    if (days > 0) return `${days}d ${remH}h`;
+    if (hrs > 0) return `${hrs}h ${remM}m`;
+    if (mins > 0) return `${mins}m`;
+    return `${s}s`;
+  }
+
+  function computeStats() {
+    const pts = [...state.points.values()];
+    const count = pts.length;
+    if (count === 0) return { count: 0, timeText: "—", bboxText: "—", pathText: "—" };
+
+    let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+    for (const p of pts) {
+      minLat = Math.min(minLat, p.lat);
+      maxLat = Math.max(maxLat, p.lat);
+      minLng = Math.min(minLng, p.lng);
+      maxLng = Math.max(maxLng, p.lng);
+    }
+    const bboxText =
+      `minLat ${minLat.toFixed(5)}, minLng ${minLng.toFixed(5)}\n` +
+      `maxLat ${maxLat.toFixed(5)}, maxLng ${maxLng.toFixed(5)}`;
+
+    const timed = pts.filter(p => Number.isFinite(p.epochMs) && p.isoTime);
+    let timeText = "—";
+    if (timed.length) {
+      timed.sort((a, b) => a.epochMs - b.epochMs);
+      const begin = timed[0], end = timed[timed.length - 1];
+      const dur = formatDuration(end.epochMs - begin.epochMs);
+      timeText = `${begin.isoTime} → ${end.isoTime}${dur ? ` (${dur})` : ""}`;
+    }
+
+    let pathText = "—";
+    if (state.drawPath && pts.length >= 2) {
+      const ordered = pts.slice().sort((a, b) => {
+        const ta = a.epochMs ?? Number.POSITIVE_INFINITY;
+        const tb = b.epochMs ?? Number.POSITIVE_INFINITY;
+        if (ta !== tb) return ta - tb;
+        return (a.filename || "").localeCompare(b.filename || "");
+      });
+
+      let km = 0;
+      for (let i = 1; i < ordered.length; i++) {
+        km += haversineKm(ordered[i - 1].lat, ordered[i - 1].lng, ordered[i].lat, ordered[i].lng);
+      }
+      const miles = km * 0.621371;
+      pathText = `${km.toFixed(2)} km (${miles.toFixed(2)} mi)`;
+    }
+
+    return { count, timeText, bboxText, pathText };
+  }
+
+  function renderStats() {
+    const s = computeStats();
+    $("statsPoints").textContent = String(s.count);
+    $("statsTime").textContent = s.timeText;
+    $("statsBbox").textContent = s.bboxText;
+    $("statsPath").textContent = s.pathText;
+    updateBadge();
   }
 
   // ---------- EXIF (best-effort) ----------
@@ -480,27 +610,15 @@
     }
   }
 
-  async function fileFromHandle(id) {
-    const handle = state.fileHandles.get(id);
-    if (!handle) return null;
-    try { return await handle.getFile(); } catch { return null; }
-  }
-
   async function ensurePreviewUrl(id) {
     const cached = state.previewCache.get(id);
-    if (cached?.url) {
-      touchLRU(id);
-      return { url: cached.url, note: null };
-    }
+    if (cached?.url) { touchLRU(id); return { url: cached.url, note: null }; }
 
-    const file = await fileFromHandle(id);
+    const file = await getFileById(id);
     if (!file) return null;
 
     const heic = isHeicLike(file.name, file.type);
-
-    if (!cacheEnabled()) {
-      revokeAllPreviews();
-    }
+    if (!cacheEnabled()) revokeAllPreviews();
 
     try {
       let blobForPreview = file;
@@ -535,7 +653,6 @@
     const p = state.points.get(id);
     const m = state.markers.get(id);
     if (!p || !m) return;
-
     map.setView([p.lat, p.lng], Math.max(map.getZoom(), 14), { animate: true });
     m.openPopup();
     await hydratePopupPreview(id);
@@ -548,6 +665,7 @@
     const ids = currentFilteredOrder();
     if (ids.length === 0) {
       holder.innerHTML = `<div class="text-sm text-slate-500">No points match.</div>`;
+      renderStats();
       return;
     }
 
@@ -570,12 +688,14 @@
       row.onclick = () => { focusPoint(id); };
       holder.appendChild(row);
     }
+
+    renderStats();
   }
 
   // ---------- Path ----------
   function rebuildPath() {
     if (state.pathLine) { map.removeLayer(state.pathLine); state.pathLine = null; }
-    if (!state.drawPath) return;
+    if (!state.drawPath) { renderStats(); return; }
 
     const pts = [...state.points.values()].slice().sort((a, b) => {
       const ta = a.epochMs ?? Number.POSITIVE_INFINITY;
@@ -585,8 +705,10 @@
     });
 
     const latlngs = pts.map(p => [p.lat, p.lng]);
-    if (latlngs.length < 2) return;
+    if (latlngs.length < 2) { renderStats(); return; }
+
     state.pathLine = L.polyline(latlngs, { weight: 3, opacity: 0.8 }).addTo(map);
+    renderStats();
   }
 
   // ---------- Popup / lazy preview DOM ----------
@@ -680,10 +802,7 @@
     if (!res?.url) {
       skeleton.classList.add("hidden");
       const note = el.querySelector('[data-thumb-note="1"]');
-      if (note) {
-        note.textContent = "Preview unavailable (conversion failed or file not accessible).";
-        note.classList.remove("hidden");
-      }
+      if (note) { note.textContent = "Preview unavailable."; note.classList.remove("hidden"); }
       return;
     }
 
@@ -694,10 +813,7 @@
     skeleton.classList.add("hidden");
 
     const note = el.querySelector('[data-thumb-note="1"]');
-    if (note && res.note) {
-      note.textContent = res.note;
-      note.classList.remove("hidden");
-    }
+    if (note && res.note) { note.textContent = res.note; note.classList.remove("hidden"); }
   }
 
   // ---------- Marker wiring ----------
@@ -722,7 +838,9 @@
           if (lngEl) lngEl.textContent = p.lng.toFixed(6);
         }
       }
+
       rebuildPath();
+      renderList();
     });
 
     marker.on("popupopen", async () => {
@@ -744,7 +862,6 @@
 
       const zoomBtn = el.querySelector('[data-action="zoom"]');
       const remBtn  = el.querySelector('[data-action="remove"]');
-
       const copyCoordsBtn = el.querySelector('[data-action="copy-coords"]');
       const copyGmapsBtn  = el.querySelector('[data-action="copy-gmaps"]');
       const copyTimeBtn   = el.querySelector('[data-action="copy-time"]');
@@ -765,8 +882,7 @@
       };
 
       if (copyTimeBtn) copyTimeBtn.onclick = async () => {
-        const txt = p.isoTime || "";
-        const ok = await copyText(txt);
+        const ok = await copyText(p.isoTime || "");
         toast(ok ? "Copied ISO time" : "Copy failed");
       };
     });
@@ -786,24 +902,20 @@
     state.points.delete(id);
     state.markers.delete(id);
     state.order = state.order.filter(x => x !== id);
+
     state.fileHandles.delete(id);
+    state.files.delete(id);
 
     const entry = state.previewCache.get(id);
     if (entry?.url) URL.revokeObjectURL(entry.url);
     state.previewCache.delete(id);
     state.previewLRU = state.previewLRU.filter(x => x !== id);
 
-    updateBadge();
     updateButtons();
     renderList();
     rebuildPath();
-
-    if (state.points.size === 0) {
-      setStatus("No points left.");
-      setProgress(0);
-    } else {
-      setStatus(`Loaded ${state.points.size} editable point(s).`);
-    }
+    setStatus(state.points.size ? `Loaded ${state.points.size} editable point(s).` : "No points left.");
+    setProgress(state.points.size ? 100 : 0);
   }
 
   function fitToPoints() {
@@ -828,11 +940,7 @@
   // ---------- KML TimeSpan ----------
   function buildTimeSpanXml(iso) {
     if (!iso) return "";
-    return `
-      <TimeSpan>
-        <begin>${escapeXml(iso)}</begin>
-        <end>${escapeXml(iso)}</end>
-      </TimeSpan>`;
+    return `<TimeSpan><begin>${escapeXml(iso)}</begin><end>${escapeXml(iso)}</end></TimeSpan>`;
   }
 
   function computeFolderTimeSpan() {
@@ -974,7 +1082,6 @@
         csvEscape(String(p.fileSize ?? ""))
       ].join(","));
     }
-
     return rows.join("\n");
   }
 
@@ -988,7 +1095,6 @@
 
     const features = [...state.points.values()].map(p => {
       const coords = [Number(p.lng), Number(p.lat)];
-      // include altitude if non-zero (or always include if you prefer)
       const alt = Number(p.alt || 0);
       if (Number.isFinite(alt) && alt !== 0) coords.push(Number(alt.toFixed(1)));
 
@@ -1011,19 +1117,14 @@
       };
     });
 
-    return {
-      type: "FeatureCollection",
-      name: "Photo Map Export",
-      features
-    };
+    return { type: "FeatureCollection", name: "Photo Map Export", features };
   }
 
   function exportGeoJSON() {
-    const geo = buildGeoJSON();
-    downloadText("photo_map_export.geojson", "application/geo+json;charset=utf-8", JSON.stringify(geo, null, 2));
+    downloadText("photo_map_export.geojson", "application/geo+json;charset=utf-8", JSON.stringify(buildGeoJSON(), null, 2));
   }
 
-  // ---------- Timezone change recompute ----------
+  // ---------- Recompute times on TZ change ----------
   function recomputeTimesForAllPoints() {
     const tzSel = currentTzSelection();
     for (const p of state.points.values()) {
@@ -1034,48 +1135,76 @@
     sortByTime();
   }
 
-  // ---------- Folder load ----------
-  async function loadFolder() {
+  // ---------- Acquisition (Chrome folder picker OR fallback inputs) ----------
+  function pickViaInput(inputEl) {
+    return new Promise((resolve) => {
+      inputEl.value = "";
+      inputEl.onchange = () => resolve(Array.from(inputEl.files || []));
+      inputEl.click();
+    });
+  }
+
+  async function getFilesFromDirectoryPicker() {
+    const dirHandle = await window.showDirectoryPicker();
+    const items = [];
+    for await (const entry of dirHandle.values()) {
+      if (entry.kind !== "file") continue;
+      if (!/\.(jpg|jpeg|heic|heif)$/i.test(entry.name)) continue;
+      const file = await entry.getFile();
+      items.push({ handle: entry, file });
+    }
+    return items; // [{handle, file}]
+  }
+
+  async function loadPhotos() {
+    if ("showDirectoryPicker" in window) {
+      try { return await getFilesFromDirectoryPicker(); }
+      catch { return []; }
+    }
+
+    const folderFiles = await pickViaInput($("folderPicker")).catch(() => []);
+    if (folderFiles && folderFiles.length) return folderFiles;
+
+    return await pickViaInput($("filePicker")).catch(() => []);
+  }
+
+  // ---------- Shared processing pipeline ----------
+  async function processSelection(selection, labelForStatus = "photos") {
     clearAll();
 
-    if (!("showDirectoryPicker" in window)) {
-      addIssue("Folder picking not supported. Try Chrome/Edge desktop.");
-      setStatus("Folder picker not supported in this browser.");
-      return;
+    const normalized = [];
+    for (let i = 0; i < (selection?.length || 0); i++) {
+      const item = selection[i];
+      if (item && item.file instanceof File) normalized.push({ file: item.file, handle: item.handle || null, idx: i });
+      else if (item instanceof File) normalized.push({ file: item, handle: null, idx: i });
     }
 
-    let dirHandle;
-    try { dirHandle = await window.showDirectoryPicker(); }
-    catch { setStatus("Folder selection cancelled."); return; }
-
-    const entries = [];
-    for await (const entry of dirHandle.values()) {
-      if (entry.kind === "file" && /\.(jpg|jpeg|heic|heif)$/i.test(entry.name)) entries.push(entry);
-    }
-
-    if (entries.length === 0) {
-      addIssue("No .jpg/.jpeg/.heic/.heif files found.");
-      setStatus("No eligible images found.");
+    const candidates = normalized.filter(x => isSupportedImage(x.file));
+    if (candidates.length === 0) {
+      setStatus(`No supported images found.`);
+      addIssue("Supported: .jpg/.jpeg/.heic/.heif (and some image/* types).");
+      renderStats();
       return;
     }
 
     const tzSel = currentTzSelection();
-    setStatus(`Found ${entries.length} images. Reading EXIF (no previews yet)…`);
+    setStatus(`Found ${candidates.length} ${labelForStatus}. Reading EXIF (no previews yet)…`);
     setProgress(2);
 
     let loaded = 0, gpsMissing = 0, heicCount = 0, heicExifFallbacks = 0;
 
-    for (let i = 0; i < entries.length; i++) {
-      const entry = entries[i];
+    for (let i = 0; i < candidates.length; i++) {
+      const { file, handle } = candidates[i];
+      const id = makeFileId(file, i);
 
-      state.fileHandles.set(entry.name, entry);
+      if (handle) state.fileHandles.set(id, handle);
+      else state.files.set(id, file);
 
-      const file = await entry.getFile();
       const heic = isHeicLike(file.name, file.type);
       if (heic) heicCount++;
 
+      // EXIF needed now to map points. HEIC: try direct parse, fallback convert only if necessary.
       let exif = await readExifBestEffort(file);
-
       if (!exif && heic) {
         try {
           const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
@@ -1092,9 +1221,9 @@
         const { iso, epochMs } = buildIsoAndEpochFromExif(exif.exifDateRaw, tzSel);
 
         addPoint({
-          id: entry.name,
-          filename: entry.name,
-          label: entry.name,
+          id,
+          filename: (file.webkitRelativePath && file.webkitRelativePath.length) ? file.webkitRelativePath : file.name,
+          label: file.name,
           desc: "",
           lat: exif.lat,
           lng: exif.lng,
@@ -1113,57 +1242,233 @@
         gpsMissing++;
       }
 
-      const pct = 5 + Math.round(((i + 1) / entries.length) * 95);
+      const pct = 5 + Math.round(((i + 1) / candidates.length) * 95);
       setProgress(pct);
     }
 
-    updateBadge();
     updateButtons();
 
     if (gpsMissing) addIssue(`${gpsMissing} image(s) had no GPS EXIF and were skipped.`);
     if (heicCount) addIssue(`${heicCount} HEIC/HEIF file(s) detected. Previews convert lazily on click.`);
-    if (heicExifFallbacks) addIssue(`${heicExifFallbacks} HEIC file(s) needed a conversion fallback just to read GPS/time (browser limitation).`);
+    if (heicExifFallbacks) addIssue(`${heicExifFallbacks} HEIC file(s) needed conversion fallback just to read GPS/time (browser limitation).`);
 
     if (loaded === 0) {
       setStatus("No GPS-tagged photos found.");
       setProgress(0);
+      renderStats();
       return;
     }
 
     setStatus(`Loaded ${loaded} point(s). Previews load on demand.`);
     sortByTime();
-    renderList();
-    rebuildPath();
     fitToPoints();
+    setProgress(100);
   }
 
-  // ---------- Events ----------
-  $("btnLoad").addEventListener("click", loadFolder);
+  // ---------- Search ----------
+  function setUpSearchHandlers() {
+    $("btnClearSearch").addEventListener("click", () => { $("search").value = ""; renderList(); });
+    $("search").addEventListener("input", renderList);
+  }
+
+  // ---------- Folder-capable Drag/Drop ----------
+  async function collectFilesFromHandle(handle) {
+    const out = [];
+
+    async function walk(h) {
+      if (!h) return;
+      if (h.kind === "file") {
+        try {
+          const file = await h.getFile();
+          out.push({ file, handle: h }); // keep handle for lazy preview
+        } catch (_) {}
+        return;
+      }
+      if (h.kind === "directory") {
+        try {
+          for await (const entry of h.values()) {
+            await walk(entry);
+          }
+        } catch (_) {}
+      }
+    }
+
+    await walk(handle);
+    return out;
+  }
+
+  async function collectFilesFromWebkitEntry(entry) {
+    const outFiles = [];
+
+    function readAllEntries(reader) {
+      return new Promise((resolve) => {
+        const entries = [];
+        const pump = () => {
+          reader.readEntries((batch) => {
+            if (!batch || batch.length === 0) return resolve(entries);
+            entries.push(...batch);
+            pump();
+          }, () => resolve(entries));
+        };
+        pump();
+      });
+    }
+
+    async function walk(e) {
+      if (!e) return;
+
+      if (e.isFile) {
+        await new Promise((resolve) => {
+          e.file((file) => {
+            outFiles.push(file);
+            resolve();
+          }, () => resolve());
+        });
+        return;
+      }
+
+      if (e.isDirectory) {
+        const reader = e.createReader();
+        const entries = await readAllEntries(reader);
+        for (const child of entries) await walk(child);
+      }
+    }
+
+    await walk(entry);
+    return outFiles; // Files only (no handles)
+  }
+
+  function dedupeFilesBySignature(files) {
+    const seen = new Set();
+    const out = [];
+    for (const f of files) {
+      const sig = `${f.name}::${f.size}::${f.lastModified || 0}`;
+      if (seen.has(sig)) continue;
+      seen.add(sig);
+      out.push(f);
+    }
+    return out;
+  }
+
+  function setUpDropZone() {
+    const dz = $("dropZone");
+
+    dz.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dz.classList.add("dragover");
+    });
+
+    dz.addEventListener("dragleave", () => dz.classList.remove("dragover"));
+
+    dz.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      dz.classList.remove("dragover");
+
+      const dt = e.dataTransfer;
+      if (!dt) return;
+
+      const items = Array.from(dt.items || []);
+
+      // 1) Modern path: getAsFileSystemHandle() (Chrome/Edge) — best folder support + keeps handles.
+      if (items.length && items[0].getAsFileSystemHandle) {
+        setStatus("Scanning dropped folder/items…");
+        setProgress(5);
+
+        const collected = [];
+        for (const it of items) {
+          try {
+            const h = await it.getAsFileSystemHandle();
+            if (!h) continue;
+            const batch = await collectFilesFromHandle(h);
+            collected.push(...batch);
+          } catch (_) {}
+        }
+
+        const supported = collected
+          .filter(x => x?.file instanceof File)
+          .filter(x => isSupportedImage(x.file));
+
+        if (supported.length) {
+          await processSelection(supported, "dropped folder/items");
+          return;
+        }
+        // fall through if nothing found
+      }
+
+      // 2) WebKit fallback: webkitGetAsEntry() (Chrome-style legacy)
+      if (items.length && items[0].webkitGetAsEntry) {
+        setStatus("Scanning dropped folder/items…");
+        setProgress(5);
+
+        const files = [];
+        for (const it of items) {
+          try {
+            const entry = it.webkitGetAsEntry?.();
+            if (!entry) continue;
+            const batch = await collectFilesFromWebkitEntry(entry);
+            files.push(...batch);
+          } catch (_) {}
+        }
+
+        const deduped = dedupeFilesBySignature(files).filter(isSupportedImage);
+        if (deduped.length) {
+          await processSelection(deduped, "dropped folder/files");
+          return;
+        }
+        // fall through if nothing found
+      }
+
+      // 3) Plain files fallback (Safari and many browsers)
+      const files = Array.from(dt.files || []).filter(isSupportedImage);
+      if (!files.length) {
+        setStatus("No supported images found in drop.");
+        return;
+      }
+      await processSelection(files, "dropped files");
+    });
+  }
+
+  // ---------- Buttons/events ----------
+  $("btnLoad").addEventListener("click", async () => {
+    const selection = await loadPhotos();
+    if (!selection || selection.length === 0) { setStatus("No photos selected."); return; }
+    await processSelection(selection, "images");
+  });
+
   $("btnExportKml").addEventListener("click", exportKml);
   $("btnExportCsv").addEventListener("click", exportCsv);
   $("btnExportGeojson").addEventListener("click", exportGeoJSON);
   $("btnResetView").addEventListener("click", fitToPoints);
 
-  $("btnClearSearch").addEventListener("click", () => { $("search").value = ""; renderList(); });
-  $("search").addEventListener("input", renderList);
-
   $("btnSortTime").addEventListener("click", sortByTime);
 
-  $("togglePath").addEventListener("change", (e) => { state.drawPath = !!e.target.checked; rebuildPath(); });
+  $("togglePath").addEventListener("change", (e) => {
+    state.drawPath = !!e.target.checked;
+    rebuildPath();
+  });
+
   $("toggleFolderTimeSpan").addEventListener("change", (e) => { state.folderTimeSpan = !!e.target.checked; });
 
   $("tzSelect").addEventListener("change", () => {
     updateTzBadge();
     if (state.points.size > 0) recomputeTimesForAllPoints();
+    else renderStats();
   });
 
   $("toggleCache").addEventListener("change", () => {
     if (!cacheEnabled()) revokeAllPreviews();
   });
 
+  // ---------- Init ----------
   updateTzBadge();
   updateButtons();
-  updateBadge();
+  renderStats();
+  setUpSearchHandlers();
+  setUpDropZone();
+
+  if (!("showDirectoryPicker" in window)) {
+    addIssue("Folder picker isn’t available in this browser. Use Load photos (multi-select) or drag/drop.");
+  }
 })();
 </script>
 </body>
