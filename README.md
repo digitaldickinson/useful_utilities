@@ -2,7 +2,7 @@
 A collection of odds and ends that may be helpful or help me manage day-to-day uni stuff.
 
 - **mailmerge_to_customFilenameDoc.html** 
-A simple HTML/JS page that will take a pre-formatted Word doc and a spreadsheet and create individually named Word docs like a mail merge. Like a mailmerg, it will also insert details such as student numbers, names, etc. into the Word doc, replacing a {{tag}}. I use this to generate named feedback files for student work.
+A simple HTML/JS page that will take a pre-formatted Word doc and a spreadsheet and create individually named Word docs like a mail merge. Like a mailmerge, it will also insert details such as student numbers, names, etc. into the Word doc, replacing any {{tag}} style content. I use this to quickly generate named feedback files ready to mark student work.
 
 - **powerpuller.html** 
 A simple HTML/JS page that will take a PowerPoint presentation (PPTX) and extract text, notes and media.  It was originally designed to quickly grab speaker notes. But I thought it would be useful to quickly be able to pull apart a PPT file if you wanted to update or repurpose. 
