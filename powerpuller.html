@@ -3,38 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PPTX Extractor</title>
+    <title>PPTX Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root { --primary: #d24726; --bg: #f3f2f1; --text: #323130; --disabled: #a1a1a1; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 40px; display: flex; justify-content: center; }
-        .dashboard { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 800px; display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .dashboard { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 900px; display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
         
         .full-width { grid-column: 1 / -1; }
         h2, h3 { margin-top: 0; color: var(--text); border-bottom: 1px solid #edebe9; padding-bottom: 10px; }
         
-        /* Drop Zone */
         #drop-zone { border: 2px dashed #ced4da; padding: 30px; text-align: center; border-radius: 6px; cursor: pointer; background: #faf9f8; transition: 0.2s; }
         #drop-zone.hover { border-color: var(--primary); background: #fff4f2; }
         
-        /* Section States */
         .section { opacity: 0.4; pointer-events: none; transition: 0.3s; }
         .section.active { opacity: 1; pointer-events: auto; }
 
         .file-info { margin-top: 10px; font-size: 0.85rem; color: var(--primary); font-weight: bold; }
         .warning { color: #856404; background-color: #fff3cd; padding: 10px; border-radius: 4px; font-size: 0.8rem; margin-top: 10px; display: none; }
 
-        /* Inputs & Buttons */
         .options { margin: 15px 0; }
         .option { display: block; margin-bottom: 8px; cursor: pointer; }
-        button { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; }
+        button { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s; }
         button:hover { filter: brightness(1.1); }
+        button:disabled { background: #ccc; cursor: not-allowed; }
         button.secondary { background: #323130; margin-top: 8px; }
         
         #download-list { list-style: none; padding: 0; margin-top: 15px; }
         #download-list li { margin-bottom: 8px; }
-        #download-list a { color: var(--primary); text-decoration: none; font-weight: bold; font-size: 0.9rem; border: 1px solid var(--primary); padding: 5px 10px; border-radius: 4px; display: block; text-align: center; }
+        #download-list a { color: var(--primary); text-decoration: none; font-weight: bold; font-size: 0.9rem; border: 1px solid var(--primary); padding: 5px 10px; border-radius: 4px; display: block; text-align: center; transition: 0.2s; }
         #download-list a:hover { background: var(--primary); color: white; }
+        
+        #quick-view-container { margin-top: 20px; display: none; border-top: 2px solid #f3f2f1; padding-top: 15px; }
+        #quick-view-text { width: 100%; height: 250px; font-family: 'Courier New', monospace; font-size: 0.85rem; padding: 10px; box-sizing: border-box; background: #f9f9f9; border: 1px solid #ccc; resize: vertical; }
 
         .hidden { display: none; }
     </style>
@@ -43,11 +44,11 @@
 
 <div class="dashboard">
     <div class="full-width">
-        <h2>Powerpuller - Extract notes, text and media from PPTX files</h2>
+        <h2>PPTX Multi-Tool</h2>
         <div id="drop-zone">
             <strong>Select or Drop .pptx file</strong>
             <div id="file-details" class="file-info">No file loaded</div>
-            <div id="size-warning" class="warning">Large file detected. Processing may take a moment.</div>
+            <div id="size-warning" class="warning">Large file detected. Processing might be slow.</div>
         </div>
         <input type="file" id="file-input" accept=".pptx" class="hidden">
     </div>
@@ -56,18 +57,24 @@
         <h3>1. Extraction Settings</h3>
         <div class="options">
             <label class="option"><input type="checkbox" id="check-notes" checked> Speaker Notes</label>
-            <label class="option"><input type="checkbox" id="check-text" checked> Slide Text Content</label>
-            <label class="option"><input type="checkbox" id="check-images" checked> Media Assets (Images/Video)</label>
+            <label class="option"><input type="checkbox" id="check-text"> Slide Text Content</label>
+            <label class="option"><input type="checkbox" id="check-images"> Media Assets (Images/Video)</label>
         </div>
-        <button id="process-btn">Run Extraction</button>
+        <button id="process-btn">Extract Selected Content</button>
+        <button id="reset-btn" class="secondary" onclick="location.reload()">Load New File</button>
     </div>
 
     <div id="output-section" class="section">
-        <h3>2. Download Results</h3>
-        <ul id="download-list">
-            <li style="color: #a1a1a1; font-size: 0.85rem;">Run extraction to generate files</li>
-        </ul>
-        <button id="reset-btn" class="secondary hidden" onclick="location.reload()">Clear Dashboard</button>
+        <h3>2. Results</h3>
+        <div id="status-msg" style="font-size: 0.8rem; margin-bottom: 10px; color: #666;">Waiting for extraction...</div>
+        
+        <ul id="download-list"></ul>
+        
+        <div id="quick-view-container">
+            <p style="font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">Notes Quick-View:</p>
+            <textarea id="quick-view-text" readonly></textarea>
+            <button id="copy-btn" class="secondary" style="margin-top: 5px;">Copy to Clipboard</button>
+        </div>
     </div>
 </div>
 
@@ -77,9 +84,14 @@
     const settingsSection = document.getElementById('settings-section');
     const outputSection = document.getElementById('output-section');
     const downloadList = document.getElementById('download-list');
+    const quickView = document.getElementById('quick-view-container');
+    const quickViewText = document.getElementById('quick-view-text');
+    const statusMsg = document.getElementById('status-msg');
+    const processBtn = document.getElementById('process-btn');
+    
     let currentFile = null;
 
-    // --- File Handling ---
+    // --- File Handlers ---
     ['dragover', 'dragenter'].forEach(n => dropZone.addEventListener(n, (e) => {
         e.preventDefault(); dropZone.classList.add('hover');
     }));
@@ -94,57 +106,70 @@
     function loadFile(file) {
         if (!file || !file.name.endsWith('.pptx')) return;
         currentFile = file;
-        
         const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
         document.getElementById('file-details').innerText = `${file.name} (${sizeMB} MB)`;
-        
-        if (sizeMB > 100) {
-            document.getElementById('size-warning').style.display = 'block';
-        }
+        document.getElementById('size-warning').style.display = sizeMB > 100 ? 'block' : 'none';
         
         settingsSection.classList.add('active');
+        statusMsg.innerText = "Ready to extract.";
+        // Clear any previous run data if a new file is dropped
+        downloadList.innerHTML = "";
+        quickView.style.display = 'none';
+        outputSection.classList.remove('active');
     }
 
-    // --- Extraction Logic ---
-    document.getElementById('process-btn').onclick = async () => {
-        const btn = document.getElementById('process-btn');
-        btn.innerText = "Processing...";
-        btn.disabled = true;
+    // --- Multi-Run Logic ---
+    processBtn.onclick = async () => {
+        if (!currentFile) return;
+        
+        processBtn.innerText = "Extracting...";
+        processBtn.disabled = true;
+        
+        // Reset output UI for the new run
+        downloadList.innerHTML = "";
+        quickView.style.display = 'none';
+        outputSection.classList.add('active');
+
+        const doNotes = document.getElementById('check-notes').checked;
+        const doText = document.getElementById('check-text').checked;
+        const doImages = document.getElementById('check-images').checked;
+
+        if (!doNotes && !doText && !doImages) {
+            alert("Please select at least one option.");
+            processBtn.disabled = false;
+            processBtn.innerText = "Extract Selected Content";
+            return;
+        }
 
         try {
             const zip = await JSZip.loadAsync(currentFile);
             const outZip = new JSZip();
-            const doNotes = document.getElementById('check-notes').checked;
-            const doText = document.getElementById('check-text').checked;
-            const doImages = document.getElementById('check-images').checked;
-            
-            let notesContent = "=== SPEAKER NOTES ===\n\n";
-            let slideTextContent = "=== SLIDE TEXT ===\n\n";
+            let notesOnlyOutput = "";
+            let fullTextOutput = "";
             let totalWords = 0;
 
-            const slideFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/slides/slide')).sort(sortAlphaNum);
             const notesFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/notesSlides/notesSlide')).sort(sortAlphaNum);
-
-            if (doText) {
-                for (let f of slideFiles) {
-                    const xml = await zip.file(f).async("string");
-                    const text = extractXMLText(xml);
-                    const slideNum = f.match(/\d+/);
-                    slideTextContent += `--- Slide ${slideNum} Text ---\n${text || "[Empty]"}\n\n`;
-                    totalWords += text.split(/\s+/).length;
-                }
-                outZip.file("SlideText.txt", slideTextContent);
-            }
+            const slideFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/slides/slide')).sort(sortAlphaNum);
 
             if (doNotes) {
                 for (let f of notesFiles) {
                     const xml = await zip.file(f).async("string");
                     const text = extractXMLText(xml);
                     const slideNum = f.match(/\d+/);
-                    notesContent += `--- Slide ${slideNum} Notes ---\n${text || "[No Notes]"}\n\n`;
+                    notesOnlyOutput += `--- Slide ${slideNum} Notes ---\n${text || "[No Notes]"}\n\n`;
                     totalWords += text.split(/\s+/).length;
                 }
-                outZip.file("SpeakerNotes.txt", notesContent);
+            }
+
+            if (doText) {
+                fullTextOutput = "=== SLIDE TEXT ===\n\n";
+                for (let f of slideFiles) {
+                    const xml = await zip.file(f).async("string");
+                    const text = extractXMLText(xml);
+                    const slideNum = f.match(/\d+/);
+                    fullTextOutput += `--- Slide ${slideNum} Text ---\n${text || "[Empty]"}\n\n`;
+                    totalWords += text.split(/\s+/).length;
+                }
             }
 
             if (doImages) {
@@ -158,31 +183,45 @@
                 }
             }
 
-            // Word Doc Header
-            const readTime = Math.ceil(totalWords / 130);
-            const wordHeader = `FILE: ${currentFile.name}\nESTIMATED READ TIME: ~${readTime} min\nTOTAL WORDS: ${totalWords}\n\n`;
-
-            // Prep Downloads
-            downloadList.innerHTML = "";
-            outputSection.classList.add('active');
-            document.getElementById('reset-btn').classList.remove('hidden');
-
-            if (doNotes || doText) {
-                const finalDoc = wordHeader + (doText ? slideTextContent : "") + "\n" + (doNotes ? notesContent : "");
-                addDownloadItem("Word Document of text and notes (.doc)", createWordBlob(finalDoc), "Content.doc");
+            // Quick View Logic
+            if (doNotes && !doText && !doImages) {
+                quickView.style.display = 'block';
+                quickViewText.value = notesOnlyOutput;
             }
-            
-            const fullZipBlob = await outZip.generateAsync({type: "blob"});
-            addDownloadItem("All Assets (text,notes and media) (.ZIP)", fullZipBlob, "Assets.zip");
 
-            btn.innerText = "Extraction Complete";
+            // Word Doc Creation
+            if (doNotes || doText) {
+                const readTime = Math.ceil(totalWords / 130);
+                const wordHeader = `FILE: ${currentFile.name}\nEST. READ TIME: ~${readTime} min\n\n`;
+                const wordContent = wordHeader + (doText ? fullTextOutput : "") + "\n" + (doNotes ? notesOnlyOutput : "");
+                addDownloadItem("Word Document (.doc)", createWordBlob(wordContent), "Content.doc");
+            }
 
+            // ZIP Creation (if media or multiple text types requested)
+            if (doImages || (doNotes && doText)) {
+                if (doNotes) outZip.file("Notes.txt", notesOnlyOutput);
+                if (doText) outZip.file("SlideText.txt", fullTextOutput);
+                const zipBlob = await outZip.generateAsync({type: "blob"});
+                addDownloadItem("All Assets (.ZIP)", zipBlob, "Assets.zip");
+            }
+
+            statusMsg.innerText = "Extraction complete. You can change settings and run again.";
         } catch (err) {
             console.error(err);
-            alert("Error processing file.");
-            btn.innerText = "Run Extraction";
-            btn.disabled = false;
+            statusMsg.innerText = "Error during extraction.";
+        } finally {
+            processBtn.innerText = "Extract Selected Content";
+            processBtn.disabled = false;
         }
+    };
+
+    // --- Helpers ---
+    document.getElementById('copy-btn').onclick = () => {
+        quickViewText.select();
+        document.execCommand('copy');
+        const btn = document.getElementById('copy-btn');
+        btn.innerText = "Copied!";
+        setTimeout(() => btn.innerText = "Copy to Clipboard", 2000);
     };
 
     function extractXMLText(xml) {
