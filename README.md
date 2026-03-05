@@ -6,6 +6,11 @@ A collection of odds and ends that may be helpful or help me manage day-to-day u
 - **mailmerge_to_customFilenameDoc.html** 
 A simple HTML/JS page that will take a pre-formatted Word doc and a spreadsheet and create individually named Word docs like a mail merge. Like a mailmerge, it will also insert details such as student numbers, names, etc. into the Word doc, replacing any {{tag}} style content. I use this to quickly generate named feedback files ready to mark student work.
 
+<img width="1209" height="715" alt="image" src="https://github.com/user-attachments/assets/29e83efd-e5ef-4560-9b99-d5b0f6f0695d" />
+
+- **moodles.html** 
+A simple HTML/JS page designed to make creating and uploading feedback files easier in Moodle. It takes a zip file of Moodle submissions, strips out sybmission ID's and names. You can also side-load a Moodle Grading sheet (CSV) to add more data (optional). This can then be merged with a feedback template in a doc format.  The app will look for {{TAGS}} to replace based on the submission ID and data from the CSV. Then it will export personalised feedback templates with the correct filename to work with the bulk upload function in Moodle. No uploads, etc. It's all local (apart from access to CDN/Libs). This version is tuned to my Uni's version of Moodle. File naming conventions may vary depending on your version of Moodle.  
+
 <img width="1002" height="764" alt="image" src="https://github.com/user-attachments/assets/b412a949-3ffa-4af2-b1d6-0713d8c16bd1" />
 
 - **powerpuller.html** 
