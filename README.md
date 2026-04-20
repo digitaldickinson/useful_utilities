@@ -20,3 +20,22 @@ A simple HTML/JS page that will take a PowerPoint presentation (PPTX) and extrac
 
 - **quickmap.html**
 A small, single-page HTML file that reads GPS + time metadata from images in a folder and plots them on an interactive map. It supports JPG/JPEG and iPhone HEIC/HEIF, edit labels/descriptions and drag markers to correct locations, and can optionally draw a time-ordered path. Exports are aimed at real workflows: KML (with KML 2.2 TimeSpan for timeline support), CSV for tools like Datawrapper, and GeoJSON for modern mapping/GIS. Everything runs locally in your browser — no uploads, no server!
+
+* **moodle-feedback-helper** *(Microsoft Edge extension)*
+  A browser extension that sits alongside Moodle's assignment grading interface and matches files from a local feedback folder to the student currently being graded. When you open a grading page, it reads the student's name from the page, scans your chosen folder for any file containing that name (fuzzy — handles `Harrison_Andrews.docx`, `Andrews Harrison.docx`, `2394729_Harrison_Andrews.docx`, `Harrison.docx` etc.), and displays matches in a floating panel. Files can be dragged directly onto Moodle's upload area, or injected programmatically with one click. Cuts out the window-switching and manual hunting that comes with Moodle ordering submissions by time rather than alphabetically. The selected folder persists across student pages without re-selecting.
+
+  **Installation**
+  1. Download `moodle-feedback-helper.zip` and unzip it
+  2. In Microsoft Edge, go to `edge://extensions`
+  3. Enable **Developer mode** (toggle, top right)
+  4. Click **Load unpacked** and select the unzipped `moodle-feedback-helper` folder
+  5. The extension icon will appear in your toolbar
+
+  **Usage**
+  1. Navigate to your Moodle instance and click the extension icon
+  2. Click **Select Feedback Folder** and choose the folder containing your feedback files
+  3. Open any student's grading page — the panel appears automatically
+  4. Matched files appear in the panel; drag them onto Moodle's upload area, or click **Upload →** to attempt automatic injection
+  5. The extension icon also shows which student is currently being graded
+
+  > Folder access permissions lapse when the browser restarts — just click the extension icon and reselect the folder (it remembers the name). The programmatic **Upload →** button targets common Moodle file manager selectors; if it reports the drop zone isn't found, dragging will still work. Built for Edge but should load in Chrome under developer mode.
