@@ -48,4 +48,5 @@ A small, single-page HTML file that reads GPS + time metadata from images in a f
   4. Matched files appear in the panel; drag them onto Moodle's upload area, or click **Upload →** to attempt automatic injection
   5. The extension icon also shows which student is currently being graded
 
+
   > Folder access permissions lapse when the browser restarts — just click the extension icon and reselect the folder (it remembers the name). The programmatic **Upload →** button targets common Moodle file manager selectors; if it reports the drop zone isn't found, dragging will still work. Built for Edge, but should load in Chrome under developer mode.
