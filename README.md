@@ -21,6 +21,9 @@ A simple HTML/JS page that will take a PowerPoint presentation (PPTX) and extrac
 - **quickmap.html**
 A small, single-page HTML file that reads GPS + time metadata from images in a folder and plots them on an interactive map. It supports JPG/JPEG and iPhone HEIC/HEIF, edit labels/descriptions and drag markers to correct locations, and can optionally draw a time-ordered path. Exports are aimed at real workflows: KML (with KML 2.2 TimeSpan for timeline support), CSV for tools like Datawrapper, and GeoJSON for modern mapping/GIS. Everything runs locally in your browser — no uploads, no server!
 
+<img width="1269" height="745" alt="Screenshot 2026-04-20 at 19 19 15" src="https://github.com/user-attachments/assets/77243ab3-e23e-4242-a037-e044b7e32aa8" />
+
+
 * **moodle-feedback-helper** *(Microsoft Edge extension)*
   A browser extension that sits alongside Moodle's assignment grading interface and matches files from a local feedback folder to the student currently being graded. When you open a grading page, it reads the student's name from the page, scans your chosen folder for any file containing that name (fuzzy — handles `Student_Name.docx`, `Student Name.docx`, `2394729_Name_Student.docx`, `Student.docx` etc.), and displays matches in a floating panel. Files can be dragged directly into Moodle's upload area or uploaded programmatically with one click. Cuts out the window-switching and manual hunting that comes with Moodle ordering submissions by time rather than alphabetically. The selected folder persists across student pages without re-selecting.
 
