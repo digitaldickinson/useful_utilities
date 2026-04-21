@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MMFJ2 — My Journalist Pet</title>
+
+<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-app-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-firestore-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js"></script>
+
+<style>
+:root {
+  --bg:     #0e0e0c;
+  --bg2:    #181816;
+  --bg3:    #222220;
+  --bg4:    #2c2c2a;
+  --amber:  #EF9F27;
+  --green:  #97C459;
+  --red:    #E24B4A;
+  --text:   #C4C2B8;
+  --textb:  #F1EFE8;
+  --textm:  #6B6A65;
+  --border: rgba(255,255,255,0.08);
+  --mono:   -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:var(--mono)}
+
+/* ── PHONE SHELL ── */
+#phone{
+  position:relative;width:100%;max-width:430px;
+  height:100vh;height:100dvh;
+  margin:0 auto;background:var(--bg);
+  display:flex;flex-direction:column;
+  -webkit-overflow-scrolling:touch;
+}
+
+/* ── SCREENS ── */
+.scr{
+  position:absolute;top:0;right:0;bottom:0;left:0;
+  display:flex;flex-direction:column;
+  background:var(--bg);transition:opacity 0.25s,transform 0.25s;
+}
+.scr.off{opacity:0;pointer-events:none;transform:translateY(16px)}
+
+/* ── HEADER ── */
+.hdr{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:13px 20px;display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.hdr-name{font-size:13px;letter-spacing:2px;color:var(--amber)}
+.stage-pill{
+  font-size:10px;letter-spacing:1px;padding:4px 11px;
+  border:1px solid var(--amber);color:var(--amber);text-transform:uppercase;
+}
+
+/* ── STATS STRIP ── */
+.stats{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;flex-shrink:0;
+}
+.stat{flex:1;text-align:center;padding:10px 0}
+.stat-n{font-size:21px;font-weight:bold;color:var(--amber)}
+.stat-l{font-size:9px;letter-spacing:1px;color:var(--textm);margin-top:1px}
+
+/* ── SCROLLABLE CONTENT ── */
+.content{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.content::-webkit-scrollbar{width:3px}
+.content::-webkit-scrollbar-thumb{background:var(--bg4)}
+
+/* ── TAB BAR ── */
+.tabs{background:var(--bg2);border-top:1px solid var(--border);display:flex;flex-shrink:0}
+.tab{
+  flex:1;padding:13px 0 11px;text-align:center;cursor:pointer;
+  font-size:10px;letter-spacing:1px;color:var(--textm);transition:color 0.2s;
+  text-transform:uppercase;
+}
+.tab.on{color:var(--amber);border-top:2px solid var(--amber);margin-top:-1px}
+.tab-icon{display:none}
+
+/* ── WELCOME ── */
+#scr-welcome .inner{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:32px 28px;
+}
+.app-title{font-size:26px;font-weight:600;color:var(--amber);letter-spacing:1px}
+.app-sub{font-size:11px;color:var(--textm);letter-spacing:2px;margin-top:4px;margin-bottom:36px}
+#welcome-egg{margin-bottom:28px;display:block}
+
+input{
+  background:var(--bg3);border:1px solid rgba(255,255,255,0.14);
+  color:var(--textb);padding:14px 16px;font-family:var(--mono);
+  font-size:16px;width:100%;outline:none;letter-spacing:1px;
+  margin-bottom:10px;
+  -webkit-appearance:none;border-radius:0;
+  -webkit-text-fill-color:var(--textb);opacity:1;
+}
+input:focus{border-color:var(--amber)}
+
+button{
+  font-family:var(--mono);font-size:12px;letter-spacing:2px;text-transform:uppercase;
+  cursor:pointer;border:none;padding:14px 24px;transition:opacity 0.15s;width:100%;
+  -webkit-appearance:none;touch-action:manipulation;
+  border-radius:0;
+}
+.btn-main{background:var(--amber);color:#111;font-weight:bold}
+.btn-main:active{opacity:0.8}
+.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.14);color:var(--text);margin-top:8px}
+.btn-ghost:active{border-color:var(--amber);color:var(--amber)}
+
+/* ── EGG SCREEN ── */
+.egg-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+#egg-wrap{width:150px;height:195px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.egg-msg{font-size:13px;color:var(--text);text-align:center;padding:0 28px;margin-top:18px;line-height:1.75}
+.egg-foot{padding:24px}
+.egg-hint{font-size:11px;color:var(--textm);text-align:center;margin-top:10px;line-height:1.7}
+
+/* ── QUIZ ── */
+.quiz-body{flex:1;overflow-y:auto;padding:20px}
+.q-bar-bg{background:var(--bg3);height:3px;margin-bottom:22px}
+.q-bar-fill{height:100%;background:var(--amber);transition:width 0.35s}
+.q-label{font-size:10px;color:var(--textm);letter-spacing:2px;margin-bottom:8px}
+.q-text{font-size:15px;color:var(--textb);line-height:1.55;margin-bottom:22px}
+.opt{
+  display:block;width:100%;text-align:left;background:var(--bg3);
+  border:1px solid var(--border);color:var(--text);padding:14px 15px;
+  margin-bottom:10px;font-family:var(--mono);font-size:13px;cursor:pointer;
+  transition:all 0.15s;line-height:1.45;
+}
+.opt:active{opacity:0.7}
+.opt.ok {border-color:#639922;background:rgba(99,153,34,.12);color:#97C459}
+.opt.bad{border-color:#E24B4A;background:rgba(226,75,74,.09);color:#E24B4A}
+.exp{padding:12px 15px;font-size:12px;line-height:1.65;color:var(--text);margin-top:2px}
+
+/* ── HATCH SCREEN ── */
+#scr-hatch{align-items:center;justify-content:center}
+#hatch-wrap{width:210px;height:230px;display:flex;align-items:center;justify-content:center;position:relative}
+#hatch-msg{font-size:12px;color:var(--textm);margin-top:18px;letter-spacing:1px;text-align:center;padding:0 24px}
+
+/* ── PET AREA ── */
+.pet-zone{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:16px 20px;
+}
+#pet-wrap{
+  width:210px;height:210px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+.tap-hint{font-size:10px;color:var(--textm);letter-spacing:1px;margin-top:6px}
+.prog-area{width:100%;max-width:290px;margin-top:14px}
+.prog-lbl{font-size:10px;letter-spacing:2px;color:var(--textm);margin-bottom:7px;display:flex;justify-content:space-between}
+.prog-track{background:var(--bg3);height:5px}
+.prog-fill{height:100%;background:var(--amber);transition:width 0.9s ease}
+.pet-msg{font-size:13px;color:var(--text);text-align:center;padding:14px 24px 0;line-height:1.65;min-height:52px}
+
+/* ── CHECKLIST ── */
+.cl-body{flex:1;padding:0 20px 32px;overflow-y:auto}
+.cl-body::-webkit-scrollbar{width:3px}
+.cl-body::-webkit-scrollbar-thumb{background:var(--bg4)}
+.cl-group{margin-bottom:2px}
+.cl-grp-hdr{
+  font-size:10px;letter-spacing:2px;color:var(--amber);
+  padding:16px 0 8px;border-top:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.cl-grp-count{color:var(--textm)}
+.cl-item{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.04);
+  cursor:pointer;user-select:none;-webkit-user-select:none;
+}
+.cl-box{
+  width:22px;height:22px;flex-shrink:0;
+  border:1px solid rgba(255,255,255,0.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;transition:all 0.2s;margin-top:1px;
+}
+.cl-box.on{background:#639922;border-color:#639922;color:#fff}
+.cl-text{font-size:13px;line-height:1.5;color:var(--text);transition:color 0.2s}
+.cl-text.done{color:var(--textm);text-decoration:line-through}
+
+/* ── FLASH OVERLAY ── */
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:999}
+
+.tabs{padding-bottom:env(safe-area-inset-bottom,0px)}
+#phone{padding-top:env(safe-area-inset-top,0px)}
+</style>
+</head>
+<body>
+<div id="phone">
+<div id="flash"></div>
+
+<div id="scr-welcome" class="scr">
+  <div class="inner">
+    <div class="app-title">MMFJ2</div>
+    <div class="app-sub">JOURNALIST PET</div>
+    <svg id="welcome-egg" viewBox="0 0 60 78" width="60" height="78" xmlns="http://www.w3.org/2000/svg"><ellipse cx="30" cy="42" rx="28" ry="36" fill="none" stroke="#EF9F27" stroke-width="2.5" opacity="0.7"/><ellipse cx="30" cy="42" rx="18" ry="24" fill="none" stroke="#EF9F27" stroke-width="1" opacity="0.3"/></svg>
+    <input id="name-inp" type="text" placeholder="Your pet's name…" maxlength="22"
+      autocomplete="off" spellcheck="false" autocapitalize="words">
+    <button type="button" class="btn-main" onclick="handleName()">Find My Pet →</button>
+    <button class="btn-ghost" onclick="">Same name = same pet · New name = new pet</button>
+  </div>
+</div>
+
+<div id="scr-egg" class="scr off">
+  <div class="hdr">
+    <div class="hdr-name" id="egg-name-lbl">MY PET</div>
+    <div class="stage-pill">The Egg</div>
+  </div>
+  <div class="egg-area">
+    <div id="egg-wrap"></div>
+    <div class="egg-msg" id="egg-msg">Something is waiting inside…<br>Pass the quiz to hatch your pet!</div>
+  </div>
+  <div class="egg-foot">
+    <button class="btn-main" id="quiz-btn" onclick="goQuiz()">Take the Quiz →</button>
+    <div class="egg-hint" id="egg-hint"></div>
+  </div>
+</div>
+
+<div id="scr-quiz" class="scr off">
+  <div class="hdr">
+    <div class="hdr-name">BRIEF QUIZ</div>
+    <div class="stage-pill" id="q-counter">Q1 / 8</div>
+  </div>
+  <div class="quiz-body" id="quiz-body"></div>
+</div>
+
+<div id="scr-hatch" class="scr off">
+  <div id="hatch-wrap"></div>
+  <div id="hatch-msg">…</div>
+</div>
+
+<div id="scr-pet" class="scr off">
+  <div class="hdr">
+    <div class="hdr-name" id="pet-name-lbl">MY PET</div>
+    <div class="stage-pill" id="pet-stage-lbl">HATCHLING</div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-n" id="s-done">0</div><div class="stat-l">DONE</div></div>
+    <div class="stat"><div class="stat-n" id="s-left">29</div><div class="stat-l">LEFT</div></div>
+    <div class="stat"><div class="stat-n" id="s-quiz">—</div><div class="stat-l">QUIZ</div></div>
+  </div>
+  <div class="content">
+    <div id="tab-pet" class="pet-zone">
+      <div id="pet-wrap" onclick="petTap()"></div>
+      <div class="tap-hint">TAP TO INTERACT</div>
+      <div class="prog-area">
+        <div class="prog-lbl">
+          <span id="prog-stage-txt">PROGRESS</span>
+          <span id="prog-pct-txt">0%</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      </div>
+      <div class="pet-msg" id="pet-msg">…</div>
+    </div>
+    <div id="tab-cl" class="cl-body" style="display:none"></div>
+  </div>
+  <div class="tabs">
+    <div class="tab on" id="tb-pet" onclick="switchTab('pet')">
+      Pet
+    </div>
+    <div class="tab" id="tb-cl" onclick="switchTab('cl')">
+      Checklist
+    </div>
+  </div>
+</div>
+
+</div><script>
+/* ══════════════════════════════════════════════════════════════════
+   FIREBASE
+══════════════════════════════════════════════════════════════════ */
+firebase.initializeApp({
+  apiKey:            "AIzaSyAY6VVNuq_jABOEhMMHh_K3flfQJqpKSOE",
+  authDomain:        "tester-15968.firebaseapp.com",
+  projectId:         "tester-15968",
+  storageBucket:     "tester-15968.firebasestorage.app",
+  messagingSenderId: "224700660877",
+  appId:             "1:224700660877:web:80a90d34c527a58e8af6c4"
+});
+const db = firebase.firestore();
+
+/* ══════════════════════════════════════════════════════════════════
+   GAME DATA
+══════════════════════════════════════════════════════════════════ */
+const Qs = [
+  { q:"Your package must run to…",
+    o:["Exactly 50 seconds","50 seconds ±3 seconds (47–53)","60 seconds max","Any length needed"],
+    a:1, e:"50 seconds ±3 is the window. Outside 47–53 seconds = –5% penalty." },
+  { q:"Maximum reflection words before a 5% penalty?",
+    o:["800 words","850 words","880 words","900 words"],
+    a:2, e:"800 + 10% tolerance = 880 words max. Citations count; the reference list doesn't." },
+  { q:"Which interview format is explicitly NOT allowed?",
+    o:["Face-to-face at a venue","Remote via Zoom or Teams","A vox pop on the street","At the contributor's workplace"],
+    a:1, e:"The brief prohibits remote interviews (Zoom, Teams, Skype etc.) — must be face-to-face." },
+  { q:"Which shot types must appear in your B-roll?",
+    o:["Close-up only","Wide Shot (WS), Medium Shot (MS) and Close-Up (CU)","Wide shots only","No specific requirement"],
+    a:1, e:"At least one WS, MS and CU in your B-roll. Interview framed as MCU/MS." },
+  { q:"The cue that introduces your package is…",
+    o:["Recorded by you within the 50 seconds","Optional","Written by you, read live by a presenter — not in the 50 secs","Written and recorded by a presenter"],
+    a:2, e:"You write it; a presenter reads it live. It does not count toward your 50 seconds." },
+  { q:"What is the AI rule for this assessment?",
+    o:["Banned entirely","Allowed for both elements","Allowed for the package — NOT the reflection","Allowed for the reflection only"],
+    a:2, e:"AI is permitted for package production (per the AI Literacy guidelines) but explicitly banned for the reflection." },
+  { q:"Which graphical element is required in your package?",
+    o:["Opening title card","Lower third / caption identifying your interviewee","A programme logo watermark","A story map"],
+    a:1, e:"At least one lower third naming and identifying your contributor — standard broadcast practice." },
+  { q:"Your Moodle submission document must include…",
+    o:["Video link + reflection only","Video link, formatted script+cue, reflection, contact details, H&S form","Reflection and bibliography","Script, reflection and H&S form"],
+    a:1, e:"All five elements are required. Missing any will seriously impact your mark." },
+];
+const PASS = 5;
+
+const GROUPS = [
+  { lbl:"Planning", items:[
+    "I have an idea of an event to visit for my package",
+    "I have written a summary script for my event",
+    "I have organised filming for the event",
+    "I have arranged an interview for the event"
+  ]},
+  { lbl:"Filming", items:[
+    "I have filmed the event",
+    "I have filmed an interview"
+  ]},
+  { lbl:"Health & Safety", items:[
+    "I have completed a risk assessment form for each time I went on location",
+    "I have a list of contact details for the people I interviewed"
+  ]},
+  { lbl:"Review", items:[
+    "I have reviewed my B-roll and identified the shots I need",
+    "I have reviewed the interview and identified one or more clips I can use",
+    "I have checked / rewritten my script"
+  ]},
+  { lbl:"Editing", items:[
+    "I have completed my sync pull, including adjusting the script",
+    "I have completed my assembly edit, covering edits and adjusting the script if required",
+    "I have completed the fine edit — final script recording, audio levels and graphics"
+  ]},
+  { lbl:"Package QC", items:[
+    "I have watched my video package",
+    "It follows the template",
+    "I have NOT recorded the cue (it is read live by a presenter)",
+    "I can clearly identify a Close-Up (CU)",
+    "I can clearly identify a Medium Shot (MS)",
+    "I can clearly identify a Wide / Long Shot (LS/WS)",
+    "I can clearly identify a Medium Close-Up (MCU) in the interview",
+    "There is a graphical element (e.g. lower third)",
+    "The running time is 50 seconds (±3 seconds)"
+  ]},
+  { lbl:"Script", items:[
+    "There is a properly formatted script to match the package",
+    "The script contains a cue",
+    "The script is accurate and matches the finished package"
+  ]},
+  { lbl:"Reflection", items:[
+    "I have completed the reflection",
+    "I have used the headings suggested in the brief",
+    "I have included references and examples to support my reflection",
+    "I have included proper references in the Harvard Cite Them Right style"
+  ]},
+  { lbl:"Submission", items:[
+    "I have created a single Word document to upload to Moodle",
+    "The document contains a working link to my video package",
+    "Someone has checked that the link works",
+    "The document contains a properly formatted and complete script",
+    "The document contains the text of the reflection with complete references",
+    "The document contains risk assessment forms and contact details"
+  ]},
+];
+const ALL_ITEMS = GROUPS.flatMap(g => g.items);
+const TOTAL     = ALL_ITEMS.length;
+
+const STAGES = [
+  { min:0,  max:0,  name:"Breaking News",       badge:"Hatchling",           msg:"You just hatched! Head to the checklist to start your journey." },
+  { min:1,  max:8,  name:"Cub Reporter",        badge:"Cub Reporter",        msg:"Story idea locked in and filming underway — keep going!" },
+  { min:9,  max:23, name:"On Assignment",       badge:"On Assignment",       msg:"Reviewing footage and crafting the edit — you're in the thick of it." },
+  { min:24, max:30, name:"Senior Correspondent",badge:"Senior Correspondent",msg:"Package looking strong — now nail the reflection." },
+  { min:31, max:35, name:"Star Journalist",     badge:"Star Journalist",     msg:"Almost there — check the submission doc and you're done!" },
+  { min:36, max:36, name:"Award Winning",       badge:"Award Winning",       msg:"Fully evolved. Your journalist pet is complete." },
+];
+function stageOf(done){ return STAGES.findIndex(s=>done>=s.min&&done<=s.max); }
+
+/* ══════════════════════════════════════════════════════════════════
+   SEEDED PRNG  →  UNIQUE PET DNA
+══════════════════════════════════════════════════════════════════ */
+function prng(seed){
+  let s=seed;
+  return()=>{ s=(s*1664525+1013904223)&0xffffffff; return(s>>>0)/4294967295; };
+}
+function dnaFrom(name){
+  const seed=Array.from(name.toLowerCase()).reduce((a,c,i)=>a+c.charCodeAt(0)*(i+7)*31,1337);
+  const r=prng(seed);
+  return{
+    hue:  Math.floor(r()*360),
+    sat:  Math.floor(r()*25)+55,
+    lit:  Math.floor(r()*18)+52,
+    body: Math.floor(r()*4),
+    ear:  Math.floor(r()*5),
+    eye:  Math.floor(r()*5),
+    pat:  Math.floor(r()*4),
+    acc:  Math.floor(r()*6),
+    tail: Math.floor(r()*4),
+    idle: Math.floor(r()*3),
+    aHue: Math.floor(r()*360),
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SVG DRAWING
+══════════════════════════════════════════════════════════════════ */
+function eggSVG(hue,cracked=false){
+  const c=`hsl(${hue},55%,62%)`, dk=`hsl(${hue},55%,40%)`, lt=`hsl(${hue},40%,78%)`;
+  if(cracked) return`<svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:150px">
+    <g id="eL" transform-origin="80 190">
+      <path d="M80,18 C40,18 18,78 18,130 C18,166 44,196 80,196Z" fill="${c}"/>
+      <ellipse cx="52" cy="82" rx="8" ry="12" fill="${lt}" opacity="0.4"/>
+    </g>
+    <g id="eR" transform-origin="80 190">
+      <path d="M80,18 C120,18 142,78 142,130 C142,166 116,196 80,196Z" fill="${dk}"/>
+    </g>
+    <path d="M80,55 L73,78 L83,94 L71,120 L80,144" fill="none" stroke="#111" stroke-width="2.5"/>
+  </svg>`;
+  return`<svg id="egg-svg" viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:150px">
+    <g id="egg-g">
+      <path d="M80,18 C132,18 148,78 148,130 C148,168 118,198 80,198 C42,198 12,168 12,130 C12,78 28,18 80,18Z" fill="${c}"/>
+      <ellipse cx="54" cy="84" rx="10" ry="14" fill="${lt}" opacity="0.45" transform="rotate(-15,54,84)"/>
+      <ellipse cx="112" cy="70" rx="6" ry="9" fill="${lt}" opacity="0.3" transform="rotate(10,112,70)"/>
+    </g>
+  </svg>`;
+}
+
+function petSVG(dna,stage,mood='neutral'){
+  const h =`hsl(${dna.hue},${dna.sat}%,${dna.lit}%)`;
+  const dk=`hsl(${dna.hue},${dna.sat}%,${Math.max(dna.lit-22,18)}%)`;
+  const lt=`hsl(${dna.hue},${Math.max(dna.sat-10,30)}%,${Math.min(dna.lit+22,88)}%)`;
+  const ac=`hsl(${dna.aHue},68%,62%)`;
+  // Body dims by shape — used to anchor limbs correctly
+  const bcy=[118,120,118,118], bry=[58,64,52,58], brx=[60,52,66,60];
+  const bi=dna.body%4;
+  const BCY=bcy[bi], BRY=bry[bi], BRX=brx[bi];
+
+  // ── BODY (with highlight + underside depth) ─────────────────────
+  const bodyShapes=[
+    `<ellipse cx="100" cy="${BCY}" rx="${BRX}" ry="${BRY}" fill="${h}"/>`,
+    `<ellipse cx="100" cy="${BCY}" rx="${BRX}" ry="${BRY}" fill="${h}"/>`,
+    `<ellipse cx="100" cy="${BCY}" rx="${BRX}" ry="${BRY}" fill="${h}"/>`,
+    `<path d="M100,62C148,62 162,88 162,118C162,155 138,176 100,176C62,176 38,155 38,118C38,88 52,62 100,62Z" fill="${h}"/>`,
+  ];
+  // Highlight: upper-left bright ellipse; underside: darker arc
+  const bodyHighlight=`
+    <ellipse cx="${100-BRX*0.28}" cy="${BCY-BRY*0.32}" rx="${BRX*0.38}" ry="${BRY*0.28}"
+      fill="${lt}" opacity="0.35" transform="rotate(-18,${100-BRX*0.28},${BCY-BRY*0.32})"/>
+    <ellipse cx="100" cy="${BCY+BRY*0.72}" rx="${BRX*0.65}" ry="${BRY*0.22}"
+      fill="${dk}" opacity="0.28"/>`;
+
+  // ── EARS ──────────────────────────────────────────────────────────
+  const ears=[
+    `<circle cx="64" cy="68" r="18" fill="${h}"/><circle cx="136" cy="68" r="18" fill="${h}"/>
+     <circle cx="64" cy="68" r="10" fill="${lt}"/><circle cx="136" cy="68" r="10" fill="${lt}"/>`,
+    `<polygon points="62,82 50,40 78,74" fill="${h}"/><polygon points="138,82 150,40 122,74" fill="${h}"/>
+     <polygon points="63,79 55,50 76,72" fill="${lt}"/><polygon points="137,79 145,50 124,72" fill="${lt}"/>`,
+    `<ellipse cx="58" cy="96" rx="16" ry="30" fill="${dk}" transform="rotate(-20,58,96)"/>
+     <ellipse cx="142" cy="96" rx="16" ry="30" fill="${dk}" transform="rotate(20,142,96)"/>`,
+    `<circle cx="78" cy="56" r="7" fill="${ac}"/><circle cx="122" cy="56" r="7" fill="${ac}"/>
+     <line x1="78" y1="63" x2="78" y2="80" stroke="${dk}" stroke-width="3"/>
+     <line x1="122" y1="63" x2="122" y2="80" stroke="${dk}" stroke-width="3"/>`,
+    `<ellipse cx="68" cy="74" rx="9" ry="6" fill="${dk}"/><ellipse cx="132" cy="74" rx="9" ry="6" fill="${dk}"/>`,
+  ];
+
+  // ── LIMBS (arms stage>=1, legs stage>=1, grow at stage>=3) ───────
+  const limbSz = stage>=3 ? 1.3 : 1.0;  // scale factor for bigger limbs later
+  const legY   = BCY + BRY - 6;
+  const armY   = BCY - 4;
+  const armX   = BRX + 8;
+  // Arms: rounded ellipses on each side, tilted outward
+  const arms=stage>=1?`
+    <ellipse cx="${100-armX}" cy="${armY}"
+      rx="${Math.round(10*limbSz)}" ry="${Math.round(7*limbSz)}"
+      fill="${dk}" transform="rotate(-30,${100-armX},${armY})"/>
+    <ellipse cx="${100+armX}" cy="${armY}"
+      rx="${Math.round(10*limbSz)}" ry="${Math.round(7*limbSz)}"
+      fill="${dk}" transform="rotate(30,${100+armX},${armY})"/>
+    <ellipse cx="${100-armX-4}" cy="${armY+2}"
+      rx="${Math.round(5*limbSz)}" ry="${Math.round(4*limbSz)}"
+      fill="${lt}" opacity="0.5" transform="rotate(-30,${100-armX-4},${armY+2})"/>
+    <ellipse cx="${100+armX+4}" cy="${armY+2}"
+      rx="${Math.round(5*limbSz)}" ry="${Math.round(4*limbSz)}"
+      fill="${lt}" opacity="0.5" transform="rotate(30,${100+armX+4},${armY+2})"/>`:'';
+  // Legs: two stubby rounded rects with toe bumps
+  const legW=Math.round(13*limbSz), legH=Math.round(16*limbSz);
+  const lx1=100-22, lx2=100+9;
+  const legs=stage>=1?`
+    <rect x="${lx1}" y="${legY}" width="${legW}" height="${legH}" rx="${Math.round(6*limbSz)}" fill="${dk}"/>
+    <rect x="${lx2}" y="${legY}" width="${legW}" height="${legH}" rx="${Math.round(6*limbSz)}" fill="${dk}"/>
+    <ellipse cx="${lx1+legW/2}" cy="${legY+legH}" rx="${Math.round(7*limbSz)}" ry="${Math.round(4*limbSz)}" fill="${dk}"/>
+    <ellipse cx="${lx2+legW/2}" cy="${legY+legH}" rx="${Math.round(7*limbSz)}" ry="${Math.round(4*limbSz)}" fill="${dk}"/>`:'';
+
+  // ── EYES ─────────────────────────────────────────────────────────
+  const de=cx=>`<circle cx="${cx}" cy="106" r="8" fill="white"/>
+     <circle cx="${cx}" cy="106" r="5" fill="#111"/>
+     <circle cx="${cx+2}" cy="103" r="2" fill="white"/>`;
+  const eyes=[
+    de(80)+de(120),
+    `<circle cx="80" cy="106" r="11" fill="white"/><circle cx="120" cy="106" r="11" fill="white"/>
+     <circle cx="80" cy="106" r="7" fill="#111"/><circle cx="120" cy="106" r="7" fill="#111"/>
+     <circle cx="82" cy="103" r="2.5" fill="white"/><circle cx="122" cy="103" r="2.5" fill="white"/>`,
+    `<circle cx="80" cy="106" r="7" fill="${ac}" opacity="0.85"/>
+     <circle cx="120" cy="106" r="7" fill="${ac}" opacity="0.85"/>
+     <circle cx="82" cy="103" r="2" fill="white"/><circle cx="122" cy="103" r="2" fill="white"/>`,
+    `<path d="M72,108 Q80,100 88,108" fill="none" stroke="#111" stroke-width="3.5" stroke-linecap="round"/>
+     <path d="M112,108 Q120,100 128,108" fill="none" stroke="#111" stroke-width="3.5" stroke-linecap="round"/>`,
+    `<path d="M74,109 Q80,102 86,109" fill="#111"/><path d="M114,109 Q120,102 126,109" fill="#111"/>`,
+  ];
+
+  // ── EYEBROWS (mood-driven) ────────────────────────────────────────
+  // Each brow: a short line above each eye, angled by mood
+  // Neutral: flat; happy: outer ends up; excited: both ends up steep;
+  // sleepy: outer ends droop; proud: inner ends raised
+  const brows={
+    neutral:`<line x1="73" y1="96" x2="87" y2="96" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
+             <line x1="113" y1="96" x2="127" y2="96" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>`,
+    happy:  `<path d="M73,97 Q80,93 87,96" fill="none" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
+             <path d="M113,96 Q120,93 127,97" fill="none" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>`,
+    excited:`<path d="M73,98 Q80,91 87,94" fill="none" stroke="#111" stroke-width="3" stroke-linecap="round"/>
+             <path d="M113,94 Q120,91 127,98" fill="none" stroke="#111" stroke-width="3" stroke-linecap="round"/>`,
+    proud:  `<path d="M73,96 Q80,92 87,97" fill="none" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
+             <path d="M113,97 Q120,92 127,96" fill="none" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>`,
+    sleepy: `<path d="M73,94 Q80,97 87,97" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+             <path d="M113,97 Q120,97 127,94" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" opacity="0.6"/>`,
+  };
+
+  // ── MOUTH ─────────────────────────────────────────────────────────
+  const mouths={
+    happy:  `<path d="M86,124 Q100,136 114,124" fill="none" stroke="#111" stroke-width="3" stroke-linecap="round"/>`,
+    neutral:`<path d="M88,126 Q100,128 112,126" fill="none" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>`,
+    excited:`<path d="M84,122 Q100,140 116,122" fill="none" stroke="#111" stroke-width="3.5" stroke-linecap="round"/>
+             <ellipse cx="100" cy="132" rx="7" ry="5" fill="${dk}" opacity="0.4"/>`,
+    proud:  `<path d="M85,122 Q100,138 115,122" fill="none" stroke="#111" stroke-width="3.5" stroke-linecap="round"/>
+             <path d="M92,125 Q100,132 108,125" fill="${dk}" opacity="0.3"/>`,
+    sleepy: `<path d="M90,126 Q100,124 110,126" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round"/>`,
+  };
+
+  // ── PATTERNS ──────────────────────────────────────────────────────
+  const pats=[
+    '',
+    `<ellipse cx="100" cy="132" rx="28" ry="24" fill="${lt}" opacity="0.55"/>`,
+    `<circle cx="88" cy="138" r="7" fill="${dk}" opacity="0.25"/>
+     <circle cx="112" cy="144" r="5.5" fill="${dk}" opacity="0.25"/>
+     <circle cx="76" cy="148" r="4" fill="${dk}" opacity="0.2"/>`,
+    `<path d="M76,100 Q100,90 124,100" fill="none" stroke="${dk}" stroke-width="4" opacity="0.2"/>`,
+  ];
+
+  // ── ACCESSORIES ───────────────────────────────────────────────────
+  const accs=[
+    '',
+    `<path d="M82,72 Q100,62 118,72 Q110,78 100,76 Q90,78 82,72Z" fill="${ac}" opacity="0.85"/>`,
+    `<ellipse cx="100" cy="70" rx="30" ry="7" fill="${dk}"/>
+     <rect x="82" y="42" width="36" height="29" rx="4" fill="${dk}"/>
+     <rect x="82" y="42" width="36" height="8" fill="${ac}" opacity="0.6"/>`,
+    `<circle cx="82" cy="103" r="12" fill="none" stroke="${dk}" stroke-width="2.5"/>
+     <circle cx="118" cy="103" r="12" fill="none" stroke="${dk}" stroke-width="2.5"/>
+     <line x1="94" y1="103" x2="106" y2="103" stroke="${dk}" stroke-width="2.5"/>
+     <line x1="70" y1="100" x2="65" y2="103" stroke="${dk}" stroke-width="2"/>
+     <line x1="130" y1="100" x2="135" y2="103" stroke="${dk}" stroke-width="2"/>`,
+    `<path d="M60,152 Q100,144 140,152 Q140,170 100,170 Q60,170 60,152Z" fill="${ac}"/>
+     <path d="M60,152 Q100,148 140,152" fill="none" stroke="${lt}" stroke-width="2" opacity="0.6"/>`,
+  ];
+
+  // ── TAILS ─────────────────────────────────────────────────────────
+  const tails=[
+    `<ellipse cx="162" cy="138" rx="14" ry="9" fill="${dk}" transform="rotate(25,162,138)"/>`,
+    `<path d="M156,128 Q184,108 172,148" fill="none" stroke="${dk}" stroke-width="7" stroke-linecap="round"/>`,
+    `<path d="M158,132 Q178,118 174,145 Q170,158 158,148Z" fill="${dk}"/>`,
+    `<ellipse cx="158" cy="150" rx="10" ry="14" fill="${ac}" opacity="0.75" transform="rotate(15,158,150)"/>`,
+  ];
+
+  // ── AURA + CROWN ──────────────────────────────────────────────────
+  const aura=stage>=5
+    ?`<circle cx="100" cy="118" r="82" fill="none" stroke="${lt}" stroke-width="4" opacity="0.35"/>
+      <circle cx="100" cy="118" r="90" fill="none" stroke="${lt}" stroke-width="2" opacity="0.18"/>`:'';
+
+  const crown=stage>=5
+    ?`<polygon points="74,74 83,50 100,63 117,50 126,74" fill="#FFD700" stroke="#c99000" stroke-width="1.5"/>
+      <circle cx="83" cy="52" r="4" fill="#FFD700" stroke="#c99000" stroke-width="1"/>
+      <circle cx="100" cy="45" r="5" fill="#FFD700" stroke="#c99000" stroke-width="1"/>
+      <circle cx="117" cy="52" r="4" fill="#FFD700" stroke="#c99000" stroke-width="1"/>`:'';
+
+  // ── ASSEMBLE ──────────────────────────────────────────────────────
+  const body=bodyShapes[bi];
+  const ear =stage>=2?ears[dna.ear%5]:'';
+  const eye =eyes[dna.eye%5];
+  const brow=brows[mood]||brows.neutral;
+  const mth =mouths[mood]||mouths.neutral;
+  const pat =stage>=2?pats[dna.pat%4]:'';
+  const acc =stage>=3?accs[dna.acc%5]:'';
+  const tail=stage>=3?tails[dna.tail%4]:'';
+
+  // Layer order: aura → tail → legs → body → highlight → arms → ear → pat → eye → brow → mouth → acc → crown
+  return`<svg id="pet-svg" viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg"
+    style="width:100%;max-width:210px;filter:drop-shadow(0 10px 28px ${h}55);overflow:visible;">
+    <g id="pet-g">${aura}${tail}${legs}${body}${bodyHighlight}${arms}${ear}${pat}${eye}${brow}${mth}${acc}${crown}</g>
+  </svg>`;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════════════ */
+let P={
+  screen:'welcome',
+  name:'',
+  data:null,  // {quizPassed, quizScore, checks[]}
+  dna:null,
+  mood:'neutral',
+  tab:'pet',
+  idleAnm:null,
+  qIdx:0, qAns:{}, qScore:0,
+};
+
+/* ══════════════════════════════════════════════════════════════════
+   FIREBASE
+══════════════════════════════════════════════════════════════════ */
+function petKey(n){ return n.toLowerCase().trim().replace(/\s+/g,'_'); }
+
+async function loadPet(name){
+  const ref=db.collection('mmfj2_pets').doc(petKey(name));
+  const snap=await ref.get();
+  if(snap.exists){ return{...snap.data(),_k:petKey(name)}; }
+  const fresh={name,quizPassed:false,quizScore:0,checks:new Array(TOTAL).fill(false),
+    createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+    lastSeen:firebase.firestore.FieldValue.serverTimestamp()};
+  await ref.set(fresh);
+  return{...fresh,_k:petKey(name)};
+}
+
+async function save(){
+  if(!P.data||!P.data._k)return;
+  await db.collection('mmfj2_pets').doc(P.data._k).update({
+    quizPassed:P.data.quizPassed,
+    quizScore:P.data.quizScore,
+    checks:P.data.checks,
+    lastSeen:firebase.firestore.FieldValue.serverTimestamp(),
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   NUDGE LISTENER
+══════════════════════════════════════════════════════════════════ */
+let nudgeUnsubscribe  = null;
+let _prevNudgeCount   = null;   // tracks last known value so we only react to real increments
+
+function startNudgeListener(key) {
+  if (nudgeUnsubscribe) nudgeUnsubscribe();
+  _prevNudgeCount = null;       // reset on each login
+  nudgeUnsubscribe = db.collection('mmfj2_pets').doc(key).onSnapshot(doc => {
+    const data = doc.data();
+    if (!data) return;
+    const nc = data.nudgeCount ?? 0;
+    if (_prevNudgeCount === null) { _prevNudgeCount = nc; return; }  // baseline pass
+    if (nc > _prevNudgeCount) { _prevNudgeCount = nc; handleNudgeReaction(); }
+  });
+}
+
+function showToast(msg) {
+  let t = document.getElementById('nudge-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'nudge-toast';
+    t.style.cssText = `position:fixed;top:72px;left:50%;transform:translateX(-50%) translateY(-12px);
+      background:#EF9F27;color:#111;padding:9px 20px;font-family:var(--mono);font-size:12px;
+      letter-spacing:1px;font-weight:bold;opacity:0;pointer-events:none;z-index:9999;
+      white-space:nowrap;`;
+    document.getElementById('phone').appendChild(t);
+  }
+  t.textContent = msg;
+  anime.remove(t);
+  anime({ targets: t, opacity: [0, 1, 1, 0], translateY: ['-12px','0px','0px','-8px'],
+    duration: 2800, easing: 'easeOutCubic' });
+}
+
+function handleNudgeReaction() {
+  if (P.screen !== 'pet') return;
+  sndNudgeReceive();
+  showToast('NUDGE FROM YOUR LECTURER');
+  P.mood = 'excited';
+  updatePet();
+  anime({
+    targets: '#pet-g',
+    translateY: [0, -40, 8, -18, 0],
+    rotate:    [0, -14, 14, -8, 0],
+    duration: 900,
+    easing: 'easeOutElastic(1, .55)',
+    complete: () => { P.mood = 'neutral'; updatePet(); startIdle(); }
+  });
+  if (window.navigator.vibrate) { window.navigator.vibrate([80, 40, 80, 40, 160]); }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SCREEN / TAB
+══════════════════════════════════════════════════════════════════ */
+function show(id){
+  document.querySelectorAll('.scr').forEach(s=>s.classList.toggle('off',s.id!==`scr-${id}`));
+  P.screen=id;
+}
+
+function switchTab(t){
+  P.tab=t;
+  document.getElementById('tab-pet').style.display=t==='pet'?'flex':'none';
+  document.getElementById('tab-cl').style.display =t==='cl' ?'block':'none';
+  document.getElementById('tb-pet').classList.toggle('on',t==='pet');
+  document.getElementById('tb-cl').classList.toggle('on', t==='cl');
+  if(t==='cl') buildChecklist();
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   WELCOME → NAME SUBMIT
+══════════════════════════════════════════════════════════════════ */
+async function handleName(){
+  const n=document.getElementById('name-inp').value.trim();
+  if(!n)return;
+  ensureCtx();            // unlock Web Audio on this gesture (iOS / Chrome requirement)
+  P.name=n; P.dna=dnaFrom(n);
+  const btn=document.querySelector('#scr-welcome .btn-main');
+  btn.textContent='Loading…'; btn.disabled=true;
+  P.data=await loadPet(n);
+  startNudgeListener(P.data._k);
+  if(P.data.quizPassed){ openPet(); }
+  else{ openEgg(); }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   EGG SCREEN
+══════════════════════════════════════════════════════════════════ */
+function openEgg(){
+  document.getElementById('egg-name-lbl').textContent=P.name.toUpperCase();
+  document.getElementById('egg-wrap').innerHTML=eggSVG(P.dna.hue);
+  const qs=P.data.quizScore;
+  if(qs>0){
+    document.getElementById('egg-hint').textContent=
+      `Last score: ${qs}/${Qs.length}. Need ${PASS} to hatch!`;
+    document.getElementById('egg-msg').textContent=
+      qs>=PASS-1?'So close! One more try…':'Keep at it — you can crack this!';
+    document.getElementById('quiz-btn').textContent='Try Again →';
+  }
+  show('egg');
+  anime({targets:'#egg-g',rotate:['-4deg','4deg'],loop:true,direction:'alternate',
+    easing:'easeInOutSine',duration:950});
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   QUIZ
+══════════════════════════════════════════════════════════════════ */
+function goQuiz(){
+  P.qIdx=0; P.qAns={}; P.qScore=0;
+  show('quiz'); renderQ();
+}
+
+function renderQ(){
+  const q=Qs[P.qIdx], sel=P.qAns[P.qIdx], done=sel!==undefined;
+  document.getElementById('q-counter').textContent=`Q${P.qIdx+1} / ${Qs.length}`;
+  const pct=(P.qIdx/Qs.length)*100;
+  document.getElementById('quiz-body').innerHTML=`
+    <div class="q-bar-bg"><div class="q-bar-fill" style="width:${pct}%"></div></div>
+    <div class="q-label">Question ${P.qIdx+1} of ${Qs.length}</div>
+    <div class="q-text">${q.q}</div>
+    ${q.o.map((o,i)=>{
+      let c='opt';
+      if(done){ if(i===q.a)c+=' ok'; else if(i===sel)c+=' bad'; }
+      return`<button class="${c}" onclick="pickAns(${i})" ${done?'disabled':''}>${String.fromCharCode(65+i)}. ${o}</button>`;
+    }).join('')}
+    ${done?`
+      <div class="exp" style="border-left:3px solid ${sel===q.a?'#639922':'#E24B4A'}">${q.e}</div>
+      <button class="btn-main" style="margin-top:16px" onclick="nextQ()">
+        ${P.qIdx<Qs.length-1?'Next →':'See Result →'}
+      </button>`:''}
+  `;
+  document.getElementById('quiz-body').scrollTop=0;
+}
+
+function pickAns(i){
+  if(P.qAns[P.qIdx]!==undefined)return;
+  P.qAns[P.qIdx]=i;
+  if(i===Qs[P.qIdx].a)P.qScore++;
+  renderQ();
+}
+
+function nextQ(){
+  P.qIdx++;
+  if(P.qIdx>=Qs.length)finishQuiz(); else renderQ();
+}
+
+async function finishQuiz(){
+  const passed=P.qScore>=PASS;
+  P.data.quizScore=P.qScore; P.data.quizPassed=passed;
+  await save();
+  if(passed)hatchAnim(); else openEgg();
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   HATCH ANIMATION
+══════════════════════════════════════════════════════════════════ */
+function hatchAnim(){
+  const hw=document.getElementById('hatch-wrap');
+  const hm=document.getElementById('hatch-msg');
+  hw.innerHTML=eggSVG(P.dna.hue,false);
+  hm.textContent='Something is happening…';
+  show('hatch');
+
+  const tl=anime.timeline({easing:'easeInOutQuad'});
+
+  // Wobble builds
+  tl.add({targets:'#egg-g',rotate:[0,-6,6,-10,10,-6,6,0],duration:1400,easing:'easeInOutSine'});
+
+  // Swap to cracked egg
+  tl.add({
+    duration:20,
+    begin:()=>{ hw.innerHTML=eggSVG(P.dna.hue,true); hm.textContent="It's cracking!"; }
+  });
+
+  // Shake wrapper
+  tl.add({targets:'#hatch-wrap',translateX:[0,-9,9,-6,6,-3,3,0],duration:550,easing:'linear'});
+
+  // Shell flies apart
+  tl.add({duration:1, begin:()=>sndHatch()});
+  tl.add({targets:'#eL',translateX:-65,translateY:35,rotate:-45,opacity:0,duration:520,easing:'easeInCubic'});
+  tl.add({targets:'#eR',translateX:65, translateY:35,rotate:45, opacity:0,duration:520,easing:'easeInCubic'},'-=520');
+
+  // Pet appears
+  tl.add({
+    duration:20,
+    begin:()=>{
+      hw.innerHTML=petSVG(P.dna,0,'excited');
+      hm.textContent=`${P.name}'s journalist pet hatches!`;
+      anime.set('#pet-g',{scale:0,opacity:0});
+    }
+  });
+  tl.add({targets:'#pet-g',scale:[0,1.18,1],opacity:[0,1],duration:850,easing:'easeOutBack'});
+
+  // Settle and open pet screen
+  tl.add({duration:1500,complete:openPet});
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PET SCREEN
+══════════════════════════════════════════════════════════════════ */
+function openPet(){
+  updatePet();
+  show('pet');
+  buildChecklist();
+  startIdle();
+  scheduleChirp();
+}
+
+function updatePet(){
+  const done =P.data.checks.filter(Boolean).length;
+  const left =TOTAL-done;
+  const si   =stageOf(done);
+  const stg  =STAGES[si]||STAGES[STAGES.length-1];
+  const pct  =Math.round(done/TOTAL*100);
+
+  document.getElementById('pet-name-lbl').textContent =P.name.toUpperCase();
+  document.getElementById('pet-stage-lbl').textContent=stg.name.toUpperCase();
+  document.getElementById('s-done').textContent=done;
+  document.getElementById('s-left').textContent=left;
+  document.getElementById('s-quiz').textContent=`${P.data.quizScore}/${Qs.length}`;
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('prog-stage-txt').textContent=stg.badge.toUpperCase();
+  document.getElementById('prog-pct-txt').textContent=pct+'%';
+  document.getElementById('pet-msg').textContent=stg.msg;
+  document.getElementById('pet-wrap').innerHTML=petSVG(P.dna,si,P.mood);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   CHECKLIST
+══════════════════════════════════════════════════════════════════ */
+function buildChecklist(){
+  let idx=0;
+  document.getElementById('tab-cl').innerHTML=GROUPS.map(g=>{
+    const gDone=g.items.filter((_,i)=>P.data.checks[idx+i]).length;
+    const rows=g.items.map(item=>{
+      const i=idx++, chk=P.data.checks[i];
+      return`<div class="cl-item" onclick="tick(${i})">
+        <div class="cl-box${chk?' on':''}">+</div>
+        <div class="cl-text${chk?' done':''}">${item}</div>
+      </div>`;
+    }).join('');
+    return`<div class="cl-group">
+      <div class="cl-grp-hdr">
+        ${g.lbl.toUpperCase()}
+        <span class="cl-grp-count">${gDone}/${g.items.length}</span>
+      </div>${rows}</div>`;
+  }).join('');
+}
+
+async function tick(i){
+  const oldDone = P.data.checks.filter(Boolean).length;
+  const oldStage = stageOf(oldDone);
+  P.data.checks[i] = !P.data.checks[i];
+  sndTick(P.data.checks[i]);
+  await save();
+  const newDone  = P.data.checks.filter(Boolean).length;
+  const newStage = stageOf(newDone);
+
+  if (newStage > oldStage) {
+    P.mood = 'excited'; evoAnim(newStage, true);
+  } else if (newStage < oldStage) {
+    P.mood = 'neutral'; evoAnim(newStage, false);
+  } else {
+    P.mood = P.data.checks[i] ? 'happy' : 'neutral';
+    if (P.data.checks[i]) checkBounce();
+    setTimeout(() => { P.mood = 'neutral'; updatePet(); }, 2200);
+  }
+  updatePet();
+  buildChecklist();
+}
+
+function petTap(){
+  sndPurr();
+  const moods=['happy','excited','proud'];
+  P.mood=moods[Math.floor(Math.random()*moods.length)];
+  updatePet();
+  if(P.idleAnm)P.idleAnm.restart();
+  setTimeout(()=>{ P.mood='neutral'; updatePet(); startIdle(); },2000);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ANIME.JS  —  IDLE + REACTIONS
+══════════════════════════════════════════════════════════════════ */
+function startIdle(){
+  if(P.idleAnm)P.idleAnm.pause();
+  const t='#pet-g', st=P.dna?P.dna.idle:0;
+  setTimeout(()=>{
+    if(!document.querySelector(t))return;
+    if(st===0)     P.idleAnm=anime({targets:t,translateY:['0px','-9px'],loop:true,direction:'alternate',easing:'easeInOutQuad',duration:1250});
+    else if(st===1)P.idleAnm=anime({targets:t,rotate:['-3deg','3deg'],loop:true,direction:'alternate',easing:'easeInOutSine',duration:1600});
+    else           P.idleAnm=anime({targets:t,scaleX:[1,1.04],scaleY:[1,0.97],loop:true,direction:'alternate',easing:'easeInOutSine',duration:1850});
+  },120);
+}
+
+function checkBounce(){
+  if(P.idleAnm)P.idleAnm.pause();
+  const t='#pet-g';
+  if(!document.querySelector(t))return;
+  anime({targets:t,translateY:['0px','-22px','0px'],easing:'easeOutBounce',duration:720,
+    complete:startIdle});
+}
+
+function evoAnim(newStage, isUpgrade=true){
+  if(P.idleAnm) P.idleAnm.pause();
+  if (isUpgrade) {
+    sndEvolve(true);
+    anime({targets:'#flash', opacity:[0,0.85,0], duration:750, easing:'easeOutQuad'});
+    showToast('EVOLVED TO ' + (STAGES[newStage]||STAGES[STAGES.length-1]).name.toUpperCase() + '!');
+    setTimeout(()=>{
+      if(!document.querySelector('#pet-g')) return;
+      anime({ targets:'#pet-g', scale:[0.6,1.4,1], rotate:['0deg','15deg','-15deg','0deg'],
+        duration:1000, easing:'easeInOutElastic(1,0.5)',
+        complete:()=>{ updatePet(); startIdle(); } });
+    }, 160);
+  } else {
+    sndEvolve(false);
+    // de-evolution: sad shrink
+    showToast('…feeling a bit smaller');
+    setTimeout(()=>{
+      if(!document.querySelector('#pet-g')) return;
+      anime({ targets:'#pet-g', scale:[1, 0.7, 1], duration:600, easing:'easeInOutQuad',
+        complete:()=>{ updatePet(); startIdle(); } });
+    }, 60);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   AUDIO ENGINE  —  all synthesised via Web Audio API
+   Lazy-init on first user gesture (iOS + Chrome requirement)
+══════════════════════════════════════════════════════════════════ */
+let _actx = null;
+
+function actx() {
+  if (!_actx) _actx = new (window.AudioContext || window.webkitAudioContext)();
+  return _actx;
+}
+
+/* Resume context if suspended (iOS locks it until a gesture) */
+function ensureCtx() {
+  const c = actx();
+  if (c.state === 'suspended') c.resume();
+  return c;
+}
+
+/* ── Primitive: ramp a gainNode in/out around a base level ── */
+function envelope(gainNode, base, attack, sustain, release, ctx) {
+  const now = ctx.currentTime;
+  gainNode.gain.setValueAtTime(0, now);
+  gainNode.gain.linearRampToValueAtTime(base, now + attack);
+  gainNode.gain.setValueAtTime(base, now + attack + sustain);
+  gainNode.gain.linearRampToValueAtTime(0, now + attack + sustain + release);
+  return now + attack + sustain + release;
+}
+
+/* ── PURR ────────────────────────────────────────────────────────
+   Two detuned triangle waves + 24 Hz LFO on a shared gain node.
+   Separate envelope gain fades the whole thing in/out.         */
+let _purrActive = false;
+
+function sndPurr() {
+  if (_purrActive) return;
+  _purrActive = true;
+  const c = ensureCtx();
+
+  const osc1    = c.createOscillator();
+  const osc2    = c.createOscillator();
+  const lfo     = c.createOscillator();
+  const lfoAmt  = c.createGain();
+  const mixGain = c.createGain();
+  const envGain = c.createGain();
+
+  osc1.type = 'triangle'; osc1.frequency.value = 76;
+  osc2.type = 'triangle'; osc2.frequency.value = 81;  // slight detuning = beating
+  lfo.type  = 'sine';     lfo.frequency.value  = 24;  // 24 Hz = purr texture
+
+  /* LFO modulates mixGain.gain around its base value */
+  mixGain.gain.value = 0.07;
+  lfoAmt.gain.value  = 0.05;   // LFO depth: ±0.05 on top of base 0.07
+  lfo.connect(lfoAmt);
+  lfoAmt.connect(mixGain.gain);
+
+  osc1.connect(mixGain);
+  osc2.connect(mixGain);
+  mixGain.connect(envGain);
+  envGain.connect(c.destination);
+
+  /* Envelope: 0.35s in, hold 1.5s, 0.55s out */
+  const endAt = envelope(envGain, 1, 0.35, 1.5, 0.55, c);
+
+  const now = c.currentTime;
+  osc1.start(now); osc2.start(now); lfo.start(now);
+  osc1.stop(endAt + 0.05); osc2.stop(endAt + 0.05); lfo.stop(endAt + 0.05);
+
+  setTimeout(() => { _purrActive = false; }, (endAt - now + 0.1) * 1000);
+}
+
+/* ── TICK CLICK ──────────────────────────────────────────────────
+   Very short soft blip for checklist ticks.                     */
+function sndTick(checking) {
+  const c = ensureCtx();
+  const osc  = c.createOscillator();
+  const gain = c.createGain();
+  osc.connect(gain); gain.connect(c.destination);
+  const now = c.currentTime;
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(checking ? 1200 : 800, now);
+  osc.frequency.exponentialRampToValueAtTime(checking ? 1600 : 600, now + 0.06);
+  gain.gain.setValueAtTime(0.07, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+  osc.start(now); osc.stop(now + 0.1);
+}
+
+/* ── EVOLUTION FANFARE ───────────────────────────────────────────
+   Ascending major arpeggio for upgrade; descending minor for down. */
+function sndEvolve(isUpgrade) {
+  const c = ensureCtx();
+  const notes = isUpgrade
+    ? [523, 659, 784, 1047]          // C5 E5 G5 C6
+    : [523, 466, 415, 311];          // C5 Bb4 Ab4 Eb4
+  const gap = isUpgrade ? 110 : 130;
+  notes.forEach((freq, i) => {
+    setTimeout(() => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.connect(g); g.connect(c.destination);
+      const t = c.currentTime;
+      o.type = isUpgrade ? 'sine' : 'triangle';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(isUpgrade ? 0.07 : 0.05, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + (isUpgrade ? 0.28 : 0.22));
+      o.start(t); o.stop(t + 0.3);
+    }, i * gap);
+  });
+}
+
+/* ── HATCH ───────────────────────────────────────────────────────
+   Noise burst (shell crack) then rising tone as the pet emerges. */
+function sndHatch() {
+  const c = ensureCtx();
+  const now = c.currentTime;
+  // Shell crack: shaped white-noise burst through bandpass
+  try {
+    const buf = c.createBuffer(1, Math.floor(c.sampleRate * 0.09), c.sampleRate);
+    const ch  = buf.getChannelData(0);
+    for (let i = 0; i < ch.length; i++) ch[i] = (Math.random()*2-1) * (1 - i/ch.length);
+    const ns = c.createBufferSource();
+    const bp = c.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1600; bp.Q.value=0.6;
+    const ng = c.createGain(); ng.gain.value = 0.18;
+    ns.buffer=buf; ns.connect(bp); bp.connect(ng); ng.connect(c.destination);
+    ns.start(now); 
+  } catch(e) {}
+  // Rising emerge tone
+  const o = c.createOscillator(), g = c.createGain();
+  o.type='sine'; o.connect(g); g.connect(c.destination);
+  o.frequency.setValueAtTime(200, now+0.1);
+  o.frequency.exponentialRampToValueAtTime(900, now+0.55);
+  g.gain.setValueAtTime(0, now+0.1);
+  g.gain.linearRampToValueAtTime(0.06, now+0.25);
+  g.gain.exponentialRampToValueAtTime(0.001, now+0.6);
+  o.start(now+0.1); o.stop(now+0.65);
+}
+
+/* ── NUDGE RECEIVED ──────────────────────────────────────────────
+   Three rising pings — like a notification but organic.         */
+function sndNudgeReceive() {
+  const c = ensureCtx();
+  [[0,880],[90,1047],[190,1319]].forEach(([dt,f]) => {
+    setTimeout(() => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type='sine'; o.connect(g); g.connect(c.destination);
+      const t = c.currentTime;
+      o.frequency.value = f;
+      g.gain.setValueAtTime(0.06, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+      o.start(t); o.stop(t + 0.25);
+    }, dt);
+  });
+}
+
+/* ── AMBIENT CHIRP ───────────────────────────────────────────────
+   A soft two-note chirp that schedules itself randomly.
+   Only plays when on the pet screen. 45–120 s intervals.        */
+const CHIRP_PHRASES = [
+  [880,  1100],   // ascending minor 3rd
+  [1047, 1319],   // ascending minor 3rd (octave up)
+  [880,  784],    // gentle step down
+  [988,  1175],   // step up
+];
+
+function sndChirp() {
+  if (P.screen !== 'pet' || !P.data || !P.data.quizPassed) return;
+  const c  = ensureCtx();
+  const ph = CHIRP_PHRASES[Math.floor(Math.random() * CHIRP_PHRASES.length)];
+  ph.forEach((freq, i) => {
+    setTimeout(() => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.connect(g); g.connect(c.destination);
+      const t = c.currentTime;
+      o.type = 'sine';
+      o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.045, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      o.start(t); o.stop(t + 0.2);
+    }, i * 140);
+  });
+}
+
+/* Self-scheduling ambient loop */
+function scheduleChirp() {
+  const delay = 45000 + Math.random() * 75000;   // 45–120 s
+  setTimeout(() => { sndChirp(); scheduleChirp(); }, delay);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   BOOT
+══════════════════════════════════════════════════════════════════ */
+anime({targets:'#welcome-egg',translateY:['0px','-13px'],
+  loop:true,direction:'alternate',easing:'easeInOutSine',duration:950});
+
+document.getElementById('name-inp').addEventListener('keydown',e=>{
+  if(e.key==='Enter') handleName();
+});
+</script>
+</body>
+</html>
