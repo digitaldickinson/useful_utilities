@@ -201,7 +201,7 @@ button{
     <input id="name-inp" type="text" placeholder="Your pet's name…" maxlength="22"
       autocomplete="off" spellcheck="false" autocapitalize="words">
     <button type="button" class="btn-main" onclick="handleName()">Find My Pet →</button>
-    <button class="btn-ghost" onclick="">Same name = same pet · New name = new pet</button>
+    <button class="btn-ghost" onclick="">Refresh page for new random name</button>
   </div>
 </div>
 
@@ -436,26 +436,22 @@ function petSVG(dna,stage,mood='neutral'){
   const dk=`hsl(${dna.hue},${dna.sat}%,${Math.max(dna.lit-22,18)}%)`;
   const lt=`hsl(${dna.hue},${Math.max(dna.sat-10,30)}%,${Math.min(dna.lit+22,88)}%)`;
   const ac=`hsl(${dna.aHue},68%,62%)`;
-  // Body dims by shape — used to anchor limbs correctly
   const bcy=[118,120,118,118], bry=[58,64,52,58], brx=[60,52,66,60];
   const bi=dna.body%4;
   const BCY=bcy[bi], BRY=bry[bi], BRX=brx[bi];
 
-  // ── BODY (with highlight + underside depth) ─────────────────────
   const bodyShapes=[
     `<ellipse cx="100" cy="${BCY}" rx="${BRX}" ry="${BRY}" fill="${h}"/>`,
     `<ellipse cx="100" cy="${BCY}" rx="${BRX}" ry="${BRY}" fill="${h}"/>`,
     `<ellipse cx="100" cy="${BCY}" rx="${BRX}" ry="${BRY}" fill="${h}"/>`,
     `<path d="M100,62C148,62 162,88 162,118C162,155 138,176 100,176C62,176 38,155 38,118C38,88 52,62 100,62Z" fill="${h}"/>`,
   ];
-  // Highlight: upper-left bright ellipse; underside: darker arc
   const bodyHighlight=`
     <ellipse cx="${100-BRX*0.28}" cy="${BCY-BRY*0.32}" rx="${BRX*0.38}" ry="${BRY*0.28}"
       fill="${lt}" opacity="0.35" transform="rotate(-18,${100-BRX*0.28},${BCY-BRY*0.32})"/>
     <ellipse cx="100" cy="${BCY+BRY*0.72}" rx="${BRX*0.65}" ry="${BRY*0.22}"
       fill="${dk}" opacity="0.28"/>`;
 
-  // ── EARS ──────────────────────────────────────────────────────────
   const ears=[
     `<circle cx="64" cy="68" r="18" fill="${h}"/><circle cx="136" cy="68" r="18" fill="${h}"/>
      <circle cx="64" cy="68" r="10" fill="${lt}"/><circle cx="136" cy="68" r="10" fill="${lt}"/>`,
@@ -469,12 +465,10 @@ function petSVG(dna,stage,mood='neutral'){
     `<ellipse cx="68" cy="74" rx="9" ry="6" fill="${dk}"/><ellipse cx="132" cy="74" rx="9" ry="6" fill="${dk}"/>`,
   ];
 
-  // ── LIMBS (arms stage>=1, legs stage>=1, grow at stage>=3) ───────
-  const limbSz = stage>=3 ? 1.3 : 1.0;  // scale factor for bigger limbs later
+  const limbSz = stage>=3 ? 1.3 : 1.0;
   const legY   = BCY + BRY - 6;
   const armY   = BCY - 4;
   const armX   = BRX + 8;
-  // Arms: rounded ellipses on each side, tilted outward
   const arms=stage>=1?`
     <ellipse cx="${100-armX}" cy="${armY}"
       rx="${Math.round(10*limbSz)}" ry="${Math.round(7*limbSz)}"
@@ -488,7 +482,6 @@ function petSVG(dna,stage,mood='neutral'){
     <ellipse cx="${100+armX+4}" cy="${armY+2}"
       rx="${Math.round(5*limbSz)}" ry="${Math.round(4*limbSz)}"
       fill="${lt}" opacity="0.5" transform="rotate(30,${100+armX+4},${armY+2})"/>`:'';
-  // Legs: two stubby rounded rects with toe bumps
   const legW=Math.round(13*limbSz), legH=Math.round(16*limbSz);
   const lx1=100-22, lx2=100+9;
   const legs=stage>=1?`
@@ -497,7 +490,6 @@ function petSVG(dna,stage,mood='neutral'){
     <ellipse cx="${lx1+legW/2}" cy="${legY+legH}" rx="${Math.round(7*limbSz)}" ry="${Math.round(4*limbSz)}" fill="${dk}"/>
     <ellipse cx="${lx2+legW/2}" cy="${legY+legH}" rx="${Math.round(7*limbSz)}" ry="${Math.round(4*limbSz)}" fill="${dk}"/>`:'';
 
-  // ── EYES ─────────────────────────────────────────────────────────
   const de=cx=>`<circle cx="${cx}" cy="106" r="8" fill="white"/>
      <circle cx="${cx}" cy="106" r="5" fill="#111"/>
      <circle cx="${cx+2}" cy="103" r="2" fill="white"/>`;
@@ -514,10 +506,6 @@ function petSVG(dna,stage,mood='neutral'){
     `<path d="M74,109 Q80,102 86,109" fill="#111"/><path d="M114,109 Q120,102 126,109" fill="#111"/>`,
   ];
 
-  // ── EYEBROWS (mood-driven) ────────────────────────────────────────
-  // Each brow: a short line above each eye, angled by mood
-  // Neutral: flat; happy: outer ends up; excited: both ends up steep;
-  // sleepy: outer ends droop; proud: inner ends raised
   const brows={
     neutral:`<line x1="73" y1="96" x2="87" y2="96" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
              <line x1="113" y1="96" x2="127" y2="96" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>`,
@@ -531,7 +519,6 @@ function petSVG(dna,stage,mood='neutral'){
              <path d="M113,97 Q120,97 127,94" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" opacity="0.6"/>`,
   };
 
-  // ── MOUTH ─────────────────────────────────────────────────────────
   const mouths={
     happy:  `<path d="M86,124 Q100,136 114,124" fill="none" stroke="#111" stroke-width="3" stroke-linecap="round"/>`,
     neutral:`<path d="M88,126 Q100,128 112,126" fill="none" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>`,
@@ -542,7 +529,6 @@ function petSVG(dna,stage,mood='neutral'){
     sleepy: `<path d="M90,126 Q100,124 110,126" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round"/>`,
   };
 
-  // ── PATTERNS ──────────────────────────────────────────────────────
   const pats=[
     '',
     `<ellipse cx="100" cy="132" rx="28" ry="24" fill="${lt}" opacity="0.55"/>`,
@@ -552,7 +538,6 @@ function petSVG(dna,stage,mood='neutral'){
     `<path d="M76,100 Q100,90 124,100" fill="none" stroke="${dk}" stroke-width="4" opacity="0.2"/>`,
   ];
 
-  // ── ACCESSORIES ───────────────────────────────────────────────────
   const accs=[
     '',
     `<path d="M82,72 Q100,62 118,72 Q110,78 100,76 Q90,78 82,72Z" fill="${ac}" opacity="0.85"/>`,
@@ -568,7 +553,6 @@ function petSVG(dna,stage,mood='neutral'){
      <path d="M60,152 Q100,148 140,152" fill="none" stroke="${lt}" stroke-width="2" opacity="0.6"/>`,
   ];
 
-  // ── TAILS ─────────────────────────────────────────────────────────
   const tails=[
     `<ellipse cx="162" cy="138" rx="14" ry="9" fill="${dk}" transform="rotate(25,162,138)"/>`,
     `<path d="M156,128 Q184,108 172,148" fill="none" stroke="${dk}" stroke-width="7" stroke-linecap="round"/>`,
@@ -576,7 +560,6 @@ function petSVG(dna,stage,mood='neutral'){
     `<ellipse cx="158" cy="150" rx="10" ry="14" fill="${ac}" opacity="0.75" transform="rotate(15,158,150)"/>`,
   ];
 
-  // ── AURA + CROWN ──────────────────────────────────────────────────
   const aura=stage>=5
     ?`<circle cx="100" cy="118" r="82" fill="none" stroke="${lt}" stroke-width="4" opacity="0.35"/>
       <circle cx="100" cy="118" r="90" fill="none" stroke="${lt}" stroke-width="2" opacity="0.18"/>`:'';
@@ -587,7 +570,6 @@ function petSVG(dna,stage,mood='neutral'){
       <circle cx="100" cy="45" r="5" fill="#FFD700" stroke="#c99000" stroke-width="1"/>
       <circle cx="117" cy="52" r="4" fill="#FFD700" stroke="#c99000" stroke-width="1"/>`:'';
 
-  // ── ASSEMBLE ──────────────────────────────────────────────────────
   const body=bodyShapes[bi];
   const ear =stage>=2?ears[dna.ear%5]:'';
   const eye =eyes[dna.eye%5];
@@ -597,7 +579,6 @@ function petSVG(dna,stage,mood='neutral'){
   const acc =stage>=3?accs[dna.acc%5]:'';
   const tail=stage>=3?tails[dna.tail%4]:'';
 
-  // Layer order: aura → tail → legs → body → highlight → arms → ear → pat → eye → brow → mouth → acc → crown
   return`<svg id="pet-svg" viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg"
     style="width:100%;max-width:210px;filter:drop-shadow(0 10px 28px ${h}55);overflow:visible;">
     <g id="pet-g">${aura}${tail}${legs}${body}${bodyHighlight}${arms}${ear}${pat}${eye}${brow}${mth}${acc}${crown}</g>
@@ -610,7 +591,7 @@ function petSVG(dna,stage,mood='neutral'){
 let P={
   screen:'welcome',
   name:'',
-  data:null,  // {quizPassed, quizScore, checks[]}
+  data:null,
   dna:null,
   mood:'neutral',
   tab:'pet',
@@ -648,16 +629,16 @@ async function save(){
    NUDGE LISTENER
 ══════════════════════════════════════════════════════════════════ */
 let nudgeUnsubscribe  = null;
-let _prevNudgeCount   = null;   // tracks last known value so we only react to real increments
+let _prevNudgeCount   = null;
 
 function startNudgeListener(key) {
   if (nudgeUnsubscribe) nudgeUnsubscribe();
-  _prevNudgeCount = null;       // reset on each login
+  _prevNudgeCount = null;
   nudgeUnsubscribe = db.collection('mmfj2_pets').doc(key).onSnapshot(doc => {
     const data = doc.data();
     if (!data) return;
     const nc = data.nudgeCount ?? 0;
-    if (_prevNudgeCount === null) { _prevNudgeCount = nc; return; }  // baseline pass
+    if (_prevNudgeCount === null) { _prevNudgeCount = nc; return; }
     if (nc > _prevNudgeCount) { _prevNudgeCount = nc; handleNudgeReaction(); }
   });
 }
@@ -714,19 +695,75 @@ function switchTab(t){
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   WELCOME → NAME SUBMIT
+   NAME GENERATOR & HANDLER
 ══════════════════════════════════════════════════════════════════ */
+
+const FIRST_NAMES = [
+  "Scoop", "Flash", "Hunter", "Pixel", "Editor", "Crumpled", "Anchor", "Pro",
+  "Journalo", "Hedge", "Lead", "Deadline", "Bylines", "Ink", "Pressy", "Query",
+  "Pica", "Quirk", "Verify", "Candid", "Source", "Folo", "Lede", "Slug", "Nut",
+  "Graf", "Widow", "Orphan", "Gutter", "Bleed", "Sidebar", "Stet", "Agate",
+  "Morgue", "Stringer", "Hack", "Beat", "Copy", "Script", "Voice", "Sync",
+  "Frame", "Angle", "Scope", "Lens", "Focus", "Zoom", "Prime", "Macro", "Shutter"
+];
+const LAST_NAMES = [
+  "Barker", "Paw-pundit", "Sniffer", "Scribble", "Quill", "Whisker", "Press", 
+  "Typer", "Scout", "Tracker", "Mouser", "Nibbler", "Pounce", "Feathers", "Trotter",
+  "Waddle", "Snout", "Grub", "Hatch", "Chirp", "Flutter", "Dash", "Bounder",
+  "Howler", "Growler", "Padfoot", "Scratch", "Diggs", "Hopper", "Zippy", "Skitter",
+  "Glider", "Swimmer", "Grazer", "Browser", "Streamer", "Caster", "Broad",
+  "Tele", "Vision", "Wave", "Signal", "Fuzz", "Point", "Edge", "View", "Capture",
+  "Edit", "Cut", "Fade"
+];
+
+function generateJournalistName() {
+  const f = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
+  const l = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
+  // Generates a random capital letter from A to Z
+  const mid = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+  return `${f} ${mid}. ${l}`;
+}
+
 async function handleName(){
-  const n=document.getElementById('name-inp').value.trim();
-  if(!n)return;
-  ensureCtx();            // unlock Web Audio on this gesture (iOS / Chrome requirement)
-  P.name=n; P.dna=dnaFrom(n);
-  const btn=document.querySelector('#scr-welcome .btn-main');
-  btn.textContent='Loading…'; btn.disabled=true;
-  P.data=await loadPet(n);
-  startNudgeListener(P.data._k);
-  if(P.data.quizPassed){ openPet(); }
-  else{ openEgg(); }
+  const n = document.getElementById('name-inp').value.trim();
+  if(!n) return;
+  ensureCtx(); 
+  
+  const key = petKey(n);
+  const btn = document.querySelector('#scr-welcome .btn-main');
+  const originalText = "Find My Pet →";
+  
+  btn.textContent = 'Checking...';
+  btn.disabled = true;
+
+  try {
+    const ref = db.collection('mmfj2_pets').doc(key);
+    const snap = await ref.get();
+
+    if (snap.exists) {
+      const msg = `"${n}" is already on assignment.\n\n` +
+                  `• Is this YOUR pet? Click OK to continue.\n` +
+                  `• Is this someone else? Cancel and refresh for a new name.`;
+      
+      if (!confirm(msg)) {
+        btn.textContent = originalText;
+        btn.disabled = false;
+        return; 
+      }
+    }
+
+    P.name = n; 
+    P.dna = dnaFrom(n); 
+    P.data = await loadPet(n);
+    startNudgeListener(P.data._k);
+    
+    if(P.data.quizPassed) openPet(); 
+    else openEgg(); 
+    
+  } catch (err) {
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -806,38 +843,20 @@ function hatchAnim(){
   hw.innerHTML=eggSVG(P.dna.hue,false);
   hm.textContent='Something is happening…';
   show('hatch');
-
   const tl=anime.timeline({easing:'easeInOutQuad'});
-
-  // Wobble builds
   tl.add({targets:'#egg-g',rotate:[0,-6,6,-10,10,-6,6,0],duration:1400,easing:'easeInOutSine'});
-
-  // Swap to cracked egg
-  tl.add({
-    duration:20,
-    begin:()=>{ hw.innerHTML=eggSVG(P.dna.hue,true); hm.textContent="It's cracking!"; }
-  });
-
-  // Shake wrapper
+  tl.add({duration:20,begin:()=>{ hw.innerHTML=eggSVG(P.dna.hue,true); hm.textContent="It's cracking!"; }});
   tl.add({targets:'#hatch-wrap',translateX:[0,-9,9,-6,6,-3,3,0],duration:550,easing:'linear'});
-
-  // Shell flies apart
   tl.add({duration:1, begin:()=>sndHatch()});
   tl.add({targets:'#eL',translateX:-65,translateY:35,rotate:-45,opacity:0,duration:520,easing:'easeInCubic'});
   tl.add({targets:'#eR',translateX:65, translateY:35,rotate:45, opacity:0,duration:520,easing:'easeInCubic'},'-=520');
-
-  // Pet appears
-  tl.add({
-    duration:20,
-    begin:()=>{
+  tl.add({duration:20,begin:()=>{
       hw.innerHTML=petSVG(P.dna,0,'excited');
       hm.textContent=`${P.name}'s journalist pet hatches!`;
       anime.set('#pet-g',{scale:0,opacity:0});
     }
   });
   tl.add({targets:'#pet-g',scale:[0,1.18,1],opacity:[0,1],duration:850,easing:'easeOutBack'});
-
-  // Settle and open pet screen
   tl.add({duration:1500,complete:openPet});
 }
 
@@ -858,7 +877,6 @@ function updatePet(){
   const si   =stageOf(done);
   const stg  =STAGES[si]||STAGES[STAGES.length-1];
   const pct  =Math.round(done/TOTAL*100);
-
   document.getElementById('pet-name-lbl').textContent =P.name.toUpperCase();
   document.getElementById('pet-stage-lbl').textContent=stg.name.toUpperCase();
   document.getElementById('s-done').textContent=done;
@@ -901,7 +919,6 @@ async function tick(i){
   await save();
   const newDone  = P.data.checks.filter(Boolean).length;
   const newStage = stageOf(newDone);
-
   if (newStage > oldStage) {
     P.mood = 'excited'; evoAnim(newStage, true);
   } else if (newStage < oldStage) {
@@ -925,7 +942,7 @@ function petTap(){
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   ANIME.JS  —  IDLE + REACTIONS
+   ANIME.JS
 ══════════════════════════════════════════════════════════════════ */
 function startIdle(){
   if(P.idleAnm)P.idleAnm.pause();
@@ -942,8 +959,7 @@ function checkBounce(){
   if(P.idleAnm)P.idleAnm.pause();
   const t='#pet-g';
   if(!document.querySelector(t))return;
-  anime({targets:t,translateY:['0px','-22px','0px'],easing:'easeOutBounce',duration:720,
-    complete:startIdle});
+  anime({targets:t,translateY:['0px','-22px','0px'],easing:'easeOutBounce',duration:720,complete:startIdle});
 }
 
 function evoAnim(newStage, isUpgrade=true){
@@ -960,7 +976,6 @@ function evoAnim(newStage, isUpgrade=true){
     }, 160);
   } else {
     sndEvolve(false);
-    // de-evolution: sad shrink
     showToast('…feeling a bit smaller');
     setTimeout(()=>{
       if(!document.querySelector('#pet-g')) return;
@@ -971,24 +986,18 @@ function evoAnim(newStage, isUpgrade=true){
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   AUDIO ENGINE  —  all synthesised via Web Audio API
-   Lazy-init on first user gesture (iOS + Chrome requirement)
+   AUDIO ENGINE
 ══════════════════════════════════════════════════════════════════ */
 let _actx = null;
-
 function actx() {
   if (!_actx) _actx = new (window.AudioContext || window.webkitAudioContext)();
   return _actx;
 }
-
-/* Resume context if suspended (iOS locks it until a gesture) */
 function ensureCtx() {
   const c = actx();
   if (c.state === 'suspended') c.resume();
   return c;
 }
-
-/* ── Primitive: ramp a gainNode in/out around a base level ── */
 function envelope(gainNode, base, attack, sustain, release, ctx) {
   const now = ctx.currentTime;
   gainNode.gain.setValueAtTime(0, now);
@@ -997,55 +1006,28 @@ function envelope(gainNode, base, attack, sustain, release, ctx) {
   gainNode.gain.linearRampToValueAtTime(0, now + attack + sustain + release);
   return now + attack + sustain + release;
 }
-
-/* ── PURR ────────────────────────────────────────────────────────
-   Two detuned triangle waves + 24 Hz LFO on a shared gain node.
-   Separate envelope gain fades the whole thing in/out.         */
 let _purrActive = false;
-
 function sndPurr() {
   if (_purrActive) return;
   _purrActive = true;
   const c = ensureCtx();
-
-  const osc1    = c.createOscillator();
-  const osc2    = c.createOscillator();
-  const lfo     = c.createOscillator();
-  const lfoAmt  = c.createGain();
-  const mixGain = c.createGain();
-  const envGain = c.createGain();
-
-  osc1.type = 'triangle'; osc1.frequency.value = 76;
-  osc2.type = 'triangle'; osc2.frequency.value = 81;  // slight detuning = beating
-  lfo.type  = 'sine';     lfo.frequency.value  = 24;  // 24 Hz = purr texture
-
-  /* LFO modulates mixGain.gain around its base value */
-  mixGain.gain.value = 0.07;
-  lfoAmt.gain.value  = 0.05;   // LFO depth: ±0.05 on top of base 0.07
-  lfo.connect(lfoAmt);
-  lfoAmt.connect(mixGain.gain);
-
-  osc1.connect(mixGain);
-  osc2.connect(mixGain);
-  mixGain.connect(envGain);
-  envGain.connect(c.destination);
-
-  /* Envelope: 0.35s in, hold 1.5s, 0.55s out */
+  const osc1=c.createOscillator(), osc2=c.createOscillator(), lfo=c.createOscillator(), lfoAmt=c.createGain(), mixGain=c.createGain(), envGain=c.createGain();
+  osc1.type='triangle'; osc1.frequency.value=76;
+  osc2.type='triangle'; osc2.frequency.value=81;
+  lfo.type='sine'; lfo.frequency.value=24;
+  mixGain.gain.value=0.07; lfoAmt.gain.value=0.05;
+  lfo.connect(lfoAmt); lfoAmt.connect(mixGain.gain);
+  osc1.connect(mixGain); osc2.connect(mixGain);
+  mixGain.connect(envGain); envGain.connect(c.destination);
   const endAt = envelope(envGain, 1, 0.35, 1.5, 0.55, c);
-
   const now = c.currentTime;
   osc1.start(now); osc2.start(now); lfo.start(now);
-  osc1.stop(endAt + 0.05); osc2.stop(endAt + 0.05); lfo.stop(endAt + 0.05);
-
+  osc1.stop(endAt+0.05); osc2.stop(endAt+0.05); lfo.stop(endAt+0.05);
   setTimeout(() => { _purrActive = false; }, (endAt - now + 0.1) * 1000);
 }
-
-/* ── TICK CLICK ──────────────────────────────────────────────────
-   Very short soft blip for checklist ticks.                     */
 function sndTick(checking) {
   const c = ensureCtx();
-  const osc  = c.createOscillator();
-  const gain = c.createGain();
+  const osc=c.createOscillator(), gain=c.createGain();
   osc.connect(gain); gain.connect(c.destination);
   const now = c.currentTime;
   osc.type = 'sine';
@@ -1055,47 +1037,34 @@ function sndTick(checking) {
   gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
   osc.start(now); osc.stop(now + 0.1);
 }
-
-/* ── EVOLUTION FANFARE ───────────────────────────────────────────
-   Ascending major arpeggio for upgrade; descending minor for down. */
 function sndEvolve(isUpgrade) {
   const c = ensureCtx();
-  const notes = isUpgrade
-    ? [523, 659, 784, 1047]          // C5 E5 G5 C6
-    : [523, 466, 415, 311];          // C5 Bb4 Ab4 Eb4
-  const gap = isUpgrade ? 110 : 130;
+  const notes = isUpgrade ? [523, 659, 784, 1047] : [523, 466, 415, 311];
   notes.forEach((freq, i) => {
     setTimeout(() => {
-      const o = c.createOscillator(), g = c.createGain();
+      const o=c.createOscillator(), g=c.createGain();
       o.connect(g); g.connect(c.destination);
-      const t = c.currentTime;
-      o.type = isUpgrade ? 'sine' : 'triangle';
-      o.frequency.value = freq;
-      g.gain.setValueAtTime(isUpgrade ? 0.07 : 0.05, t);
-      g.gain.exponentialRampToValueAtTime(0.001, t + (isUpgrade ? 0.28 : 0.22));
+      const t=c.currentTime;
+      o.type=isUpgrade?'sine':'triangle'; o.frequency.value=freq;
+      g.gain.setValueAtTime(isUpgrade?0.07:0.05, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + (isUpgrade?0.28:0.22));
       o.start(t); o.stop(t + 0.3);
-    }, i * gap);
+    }, i * (isUpgrade ? 110 : 130));
   });
 }
-
-/* ── HATCH ───────────────────────────────────────────────────────
-   Noise burst (shell crack) then rising tone as the pet emerges. */
 function sndHatch() {
   const c = ensureCtx();
   const now = c.currentTime;
-  // Shell crack: shaped white-noise burst through bandpass
   try {
-    const buf = c.createBuffer(1, Math.floor(c.sampleRate * 0.09), c.sampleRate);
-    const ch  = buf.getChannelData(0);
-    for (let i = 0; i < ch.length; i++) ch[i] = (Math.random()*2-1) * (1 - i/ch.length);
-    const ns = c.createBufferSource();
-    const bp = c.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1600; bp.Q.value=0.6;
-    const ng = c.createGain(); ng.gain.value = 0.18;
+    const buf=c.createBuffer(1, Math.floor(c.sampleRate * 0.09), c.sampleRate);
+    const ch=buf.getChannelData(0);
+    for (let i=0; i<ch.length; i++) ch[i]=(Math.random()*2-1)*(1-i/ch.length);
+    const ns=c.createBufferSource(), bp=c.createBiquadFilter(), ng=c.createGain();
+    bp.type='bandpass'; bp.frequency.value=1600; bp.Q.value=0.6; ng.gain.value=0.18;
     ns.buffer=buf; ns.connect(bp); bp.connect(ng); ng.connect(c.destination);
     ns.start(now); 
   } catch(e) {}
-  // Rising emerge tone
-  const o = c.createOscillator(), g = c.createGain();
+  const o=c.createOscillator(), g=c.createGain();
   o.type='sine'; o.connect(g); g.connect(c.destination);
   o.frequency.setValueAtTime(200, now+0.1);
   o.frequency.exponentialRampToValueAtTime(900, now+0.55);
@@ -1104,63 +1073,50 @@ function sndHatch() {
   g.gain.exponentialRampToValueAtTime(0.001, now+0.6);
   o.start(now+0.1); o.stop(now+0.65);
 }
-
-/* ── NUDGE RECEIVED ──────────────────────────────────────────────
-   Three rising pings — like a notification but organic.         */
 function sndNudgeReceive() {
   const c = ensureCtx();
   [[0,880],[90,1047],[190,1319]].forEach(([dt,f]) => {
     setTimeout(() => {
-      const o = c.createOscillator(), g = c.createGain();
+      const o=c.createOscillator(), g=c.createGain();
       o.type='sine'; o.connect(g); g.connect(c.destination);
-      const t = c.currentTime;
-      o.frequency.value = f;
+      const t=c.currentTime; o.frequency.value=f;
       g.gain.setValueAtTime(0.06, t);
-      g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
-      o.start(t); o.stop(t + 0.25);
+      g.gain.exponentialRampToValueAtTime(0.001, t+0.22);
+      o.start(t); o.stop(t+0.25);
     }, dt);
   });
 }
-
-/* ── AMBIENT CHIRP ───────────────────────────────────────────────
-   A soft two-note chirp that schedules itself randomly.
-   Only plays when on the pet screen. 45–120 s intervals.        */
-const CHIRP_PHRASES = [
-  [880,  1100],   // ascending minor 3rd
-  [1047, 1319],   // ascending minor 3rd (octave up)
-  [880,  784],    // gentle step down
-  [988,  1175],   // step up
-];
-
+const CHIRP_PHRASES=[[880,1100],[1047,1319],[880,784],[988,1175]];
 function sndChirp() {
   if (P.screen !== 'pet' || !P.data || !P.data.quizPassed) return;
-  const c  = ensureCtx();
+  const c = ensureCtx();
   const ph = CHIRP_PHRASES[Math.floor(Math.random() * CHIRP_PHRASES.length)];
   ph.forEach((freq, i) => {
     setTimeout(() => {
-      const o = c.createOscillator(), g = c.createGain();
+      const o=c.createOscillator(), g=c.createGain();
       o.connect(g); g.connect(c.destination);
-      const t = c.currentTime;
-      o.type = 'sine';
-      o.frequency.setValueAtTime(freq, t);
+      const t=c.currentTime; o.type='sine'; o.frequency.setValueAtTime(freq, t);
       g.gain.setValueAtTime(0.045, t);
       g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
       o.start(t); o.stop(t + 0.2);
     }, i * 140);
   });
 }
-
-/* Self-scheduling ambient loop */
 function scheduleChirp() {
-  const delay = 45000 + Math.random() * 75000;   // 45–120 s
+  const delay = 45000 + Math.random() * 75000;
   setTimeout(() => { sndChirp(); scheduleChirp(); }, delay);
 }
 
 /* ══════════════════════════════════════════════════════════════════
    BOOT
 ══════════════════════════════════════════════════════════════════ */
-anime({targets:'#welcome-egg',translateY:['0px','-13px'],
-  loop:true,direction:'alternate',easing:'easeInOutSine',duration:950});
+window.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('name-inp');
+  if (input) input.value = generateJournalistName();
+  
+  anime({targets:'#welcome-egg',translateY:['0px','-13px'],
+    loop:true,direction:'alternate',easing:'easeInOutSine',duration:950});
+});
 
 document.getElementById('name-inp').addEventListener('keydown',e=>{
   if(e.key==='Enter') handleName();
