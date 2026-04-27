@@ -2,13 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>RBSEE:Turnitin - Rubric Tool (GitHub Edition)</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RBSEE:Turnitin - Rubric Tool (Clean Interface)</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/docx@9.6.1/dist/index.iife.min.js"></script>
+
     <style>
         :root { --primary: #2c3e50; --accent: #3498db; --edit: #e67e22; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f4f7f6; padding: 20px; }
         .container { background: white; padding: 25px; border-radius: 12px; max-width: 1600px; margin: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-
+        
         .controls { 
             display: flex; gap: 10px; flex-wrap: wrap; background: #f1f2f6; 
             padding: 20px; border-radius: 8px; margin-bottom: 20px; 
@@ -25,7 +28,7 @@
         .table-wrapper { overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; background: white; }
         table { width: 100%; border-collapse: collapse; min-width: 1200px; table-layout: fixed; }
         th, td { border: 1px solid #dfe6e9; padding: 12px; font-size: 13px; vertical-align: top; word-wrap: break-word; }
-        th { background: var(--primary); color: white; height: 50px; text-align: left; }
+        th { background: var(--primary); color: white; height: 60px; text-align: left; }
         
         .col-crit { width: 300px; }
         .sticky-col { position: sticky; left: 0; background: #f8f9fa !important; z-index: 5; border-right: 2px solid #ddd; }
@@ -41,7 +44,7 @@
         .crit-name, .scale-name { font-weight: bold; display: block; color: var(--primary); }
         .crit-desc, .scale-desc { font-size: 0.85em; color: #555; display: block; line-height: 1.4; }
 
-        #toast { position: fixed; bottom: 30px; right: 30px; background: #2d3436; color: white; padding: 12px 20px; border-radius: 8px; opacity: 0; transition: 0.3s; z-index: 1000; }
+        #toast { position: fixed; bottom: 30px; right: 30px; background: #2d3436; color: white; padding: 12px 20px; border-radius: 8px; opacity: 0; transition: 0.3s; z-index: 1000; pointer-events: none; }
         #toast.show { opacity: 1; }
     </style>
 </head>
@@ -51,12 +54,12 @@
 
 <div class="container">
     <h1 id="title">RBSEE:Turnitin - Rubric Tool</h1>
-    <div id="editBanner">Edit Mode Active — Changes are kept in memory</div>
+    <div id="editBanner">Edit Mode Active — Unsaved changes in memory</div>
 
     <div class="controls">
         <label class="drop-zone" id="dropZone">
             <input type="file" id="fileInput" accept=".rbc">
-            <span id="dropZoneLabel">📁 Drop .rbc or Click to Browse</span>
+            <span id="dropZoneLabel">📁 Upload .rbc</span>
         </label>
         <button id="editBtn" class="btn-orange" onclick="toggleEdit()" disabled>Enter Edit Mode</button>
         <button id="undoBtn" class="btn-blue" style="background:#95a5a6" onclick="undo()" disabled>Undo</button>
@@ -80,10 +83,8 @@
     let historyIndex = -1;
     let currentFileName = "Rubric_Export";
 
-    // --- File Handling ---
-    document.getElementById('fileInput').onchange = e => {
-        if (e.target.files[0]) loadFile(e.target.files[0]);
-    };
+    // --- File Input ---
+    document.getElementById('fileInput').onchange = e => { if (e.target.files[0]) loadFile(e.target.files[0]); };
 
     function loadFile(file) {
         currentFileName = file.name.replace(/\.[^/.]+$/, "");
@@ -93,19 +94,14 @@
                 rubricData = JSON.parse(e.target.result);
                 saveToHistory();
                 render();
-                toggleButtons(true);
+                document.querySelectorAll('.controls button').forEach(b => b.disabled = false);
                 document.getElementById('title').textContent = `RBSEE:Turnitin — ${rubricData.name || 'Rubric'}`;
-            } catch (err) { alert("Invalid RBC file."); }
+            } catch (err) { alert("Error parsing RBC file."); }
         };
         reader.readAsText(file);
     }
 
-    function toggleButtons(enabled) {
-        ['editBtn', 'saveRbcBtn', 'exportBtn'].forEach(id => {
-            document.getElementById(id).disabled = !enabled;
-        });
-    }
-
+    // --- State/History ---
     function saveToHistory() {
         if (historyIndex < history.length - 1) history = history.slice(0, historyIndex + 1);
         history.push(JSON.parse(JSON.stringify(rubricData)));
@@ -122,6 +118,7 @@
         }
     }
 
+    // --- Render (Point IDs Removed) ---
     function render() {
         if (!rubricData) return;
         const criteria = rubricData.RubricCriterion;
@@ -131,10 +128,10 @@
         scales.forEach(s => { if (!valToName[s.scale_value]) valToName[s.scale_value] = s.name || "Level"; });
 
         let headHtml = `<tr><th class="sticky-col col-crit">Criterion</th>`;
-        uniqueValues.forEach(v => {
+        uniqueValues.forEach((v, index) => {
             headHtml += `<th>
                 <span class="scale-name" contenteditable="${isEditMode}" onblur="updateGlobalScaleName(${v}, this)">${valToName[v]}</span>
-                <span style="font-size:0.7em; opacity:0.8;">Value: ${v}</span>
+                <span style="font-size:0.7em; opacity:0.8; font-weight:normal;">Scale ${index + 1}</span>
             </th>`;
         });
         headHtml += `</tr>`;
@@ -159,22 +156,9 @@
         document.getElementById('tableBody').innerHTML = bodyHtml;
     }
 
-    // --- Updates ---
-    function updateCritData(id, field, el) {
-        const crit = rubricData.RubricCriterion.find(c => c.id === id);
-        if (crit && crit[field] !== el.innerText) {
-            crit[field] = el.innerText;
-            saveToHistory();
-        }
-    }
-
-    function updateGlobalScaleName(val, el) {
-        rubricData.RubricCriterionScale.forEach(s => {
-            if (s.scale_value === val) s.name = el.innerText;
-        });
-        saveToHistory();
-    }
-
+    // --- Data Updates ---
+    function updateCritData(id, field, el) { rubricData.RubricCriterion.find(c => c.id === id)[field] = el.innerText; saveToHistory(); }
+    function updateGlobalScaleName(val, el) { rubricData.RubricCriterionScale.filter(s => s.scale_value === val).forEach(s => s.name = el.innerText); saveToHistory(); }
     function updateScaleDesc(critId, val, el) {
         let s = rubricData.RubricCriterionScale.find(sc => sc.criterion === critId && sc.scale_value === val);
         if (!s) {
@@ -183,59 +167,48 @@
             s = { id: newId, criterion: critId, scale_value: val, name: existingName, description: "" };
             rubricData.RubricCriterionScale.push(s);
         }
-        if (s.description !== el.innerText) {
-            s.description = el.innerText;
-            saveToHistory();
-        }
+        s.description = el.innerText;
+        saveToHistory();
     }
 
     function addCriterion() {
-        const newCritId = Math.max(0, ...rubricData.RubricCriterion.map(c => c.id)) + 1;
-        rubricData.RubricCriterion.push({ id: newCritId, name: "New Criterion", description: "Weight info" });
+        const newId = Math.max(0, ...rubricData.RubricCriterion.map(c => c.id)) + 1;
+        rubricData.RubricCriterion.push({ id: newId, name: "New Criterion", description: "" });
         const uniqueValues = [...new Set(rubricData.RubricCriterionScale.map(s => s.scale_value))];
         uniqueValues.forEach(v => {
             const name = rubricData.RubricCriterionScale.find(s => s.scale_value === v)?.name || "Level";
             const newScaleId = Math.max(0, ...rubricData.RubricCriterionScale.map(x => x.id)) + 1;
-            rubricData.RubricCriterionScale.push({ id: newScaleId, criterion: newCritId, scale_value: v, name: name, description: "" });
+            rubricData.RubricCriterionScale.push({ id: newScaleId, criterion: newId, scale_value: v, name: name, description: "" });
         });
-        saveToHistory();
-        render();
+        saveToHistory(); render();
     }
 
     function deleteCrit(id) {
         if (!confirm("Delete criterion?")) return;
         rubricData.RubricCriterion = rubricData.RubricCriterion.filter(c => c.id !== id);
         rubricData.RubricCriterionScale = rubricData.RubricCriterionScale.filter(s => s.criterion !== id);
-        saveToHistory();
-        render();
+        saveToHistory(); render();
     }
 
-    function toggleEdit() {
-        isEditMode = !isEditMode;
-        document.getElementById('editBtn').textContent = isEditMode ? "Exit Edit Mode" : "Enter Edit Mode";
-        document.getElementById('editBanner').classList.toggle('visible', isEditMode);
-        document.getElementById('addCritBtn').disabled = !isEditMode;
-        render();
-    }
+    function toggleEdit() { isEditMode = !isEditMode; document.getElementById('editBanner').classList.toggle('visible', isEditMode); render(); }
 
     function downloadRBC() {
         const blob = new Blob([JSON.stringify(rubricData, null, 2)], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `${currentFileName}_edited.rbc`;
-        a.click();
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${currentFileName}_edited.rbc`; a.click();
         showToast("RBC Saved.");
     }
 
-    // --- RESTORED DOCX EXPORT (Requires HTTPS/Hosting) ---
+    // --- Export (Point IDs Removed) ---
     async function exportToWord() {
-        if (typeof docx === 'undefined') {
-            alert("Library not loaded. Please ensure you are viewing this via HTTPS (GitHub Pages).");
+        const d = window.docx;
+        if (!d) {
+            alert("Library not found. Try a Hard Refresh (Cmd+Shift+R).");
             return;
         }
-        showToast("Generating .docx...");
+
+        showToast("Generating Landscape .docx...");
         try {
-            const { Document, Packer, Table, TableRow, TableCell, Paragraph, TextRun, WidthType, PageOrientation, BorderStyle } = docx;
+            const { Document, Packer, Table, TableRow, TableCell, Paragraph, TextRun, WidthType, PageOrientation, VerticalAlign, AlignmentType } = d;
 
             const criteria = rubricData.RubricCriterion;
             const scales = rubricData.RubricCriterionScale;
@@ -245,18 +218,41 @@
 
             const headerRow = new TableRow({
                 children: [
-                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Criterion", bold: true })] })], shading: { fill: "E7E7E7" } }),
-                    ...uniqueValues.map(v => new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `${valToName[v]} (${v})`, bold: true })] })], shading: { fill: "E7E7E7" } }))
+                    new TableCell({ 
+                        children: [new Paragraph({ 
+                            children: [new TextRun({ text: "Criterion", bold: true, color: "FFFFFF" })],
+                            alignment: AlignmentType.CENTER 
+                        })], 
+                        shading: { fill: "2c3e50" },
+                        verticalAlign: VerticalAlign.CENTER
+                    }),
+                    ...uniqueValues.map((v) => new TableCell({ 
+                        children: [new Paragraph({ 
+                            children: [new TextRun({ text: valToName[v], bold: true, color: "FFFFFF" })],
+                            alignment: AlignmentType.CENTER 
+                        })], 
+                        shading: { fill: "2c3e50" },
+                        verticalAlign: VerticalAlign.CENTER
+                    }))
                 ]
             });
 
             const dataRows = criteria.map(crit => {
                 return new TableRow({
                     children: [
-                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: crit.name, bold: true })] }), new Paragraph({ children: [new TextRun({ text: crit.description, size: 18 })] })] }),
+                        new TableCell({ 
+                            children: [
+                                new Paragraph({ children: [new TextRun({ text: crit.name, bold: true })] }),
+                                new Paragraph({ children: [new TextRun({ text: crit.description, size: 18, color: "555555" })] })
+                            ],
+                            width: { size: 25, type: WidthType.PERCENTAGE }
+                        }),
                         ...uniqueValues.map(val => {
                             const s = scales.find(sc => sc.criterion === crit.id && sc.scale_value === val);
-                            return new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: s ? s.description : "", size: 18 })] })] });
+                            return new TableCell({ 
+                                children: [new Paragraph({ children: [new TextRun({ text: s ? s.description : "", size: 18 })] })],
+                                width: { size: 75 / uniqueValues.length, type: WidthType.PERCENTAGE }
+                            });
                         })
                     ]
                 });
@@ -264,8 +260,22 @@
 
             const doc = new Document({
                 sections: [{
-                    properties: { page: { orientation: PageOrientation.LANDSCAPE } },
-                    children: [new Table({ rows: [headerRow, ...dataRows], width: { size: 100, type: WidthType.PERCENTAGE } })]
+                    properties: {
+                        page: {
+                            size: { orientation: PageOrientation.LANDSCAPE },
+                            margin: { top: 720, right: 720, bottom: 720, left: 720 }
+                        }
+                    },
+                    children: [
+                        new Paragraph({
+                            children: [new TextRun({ text: rubricData.name || "Rubric Export", bold: true, size: 32 })],
+                            spacing: { after: 200 }
+                        }),
+                        new Table({ 
+                            rows: [headerRow, ...dataRows], 
+                            width: { size: 100, type: WidthType.PERCENTAGE } 
+                        })
+                    ]
                 }]
             });
 
@@ -276,18 +286,14 @@
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            showToast("Export Complete!");
+            showToast("Export Successful!");
         } catch (err) {
             console.error(err);
-            alert("Export failed. Check console for details.");
+            alert("Export failed.");
         }
     }
 
-    function showToast(m) {
-        const t = document.getElementById('toast');
-        t.innerText = m; t.classList.add('show');
-        setTimeout(() => t.classList.remove('show'), 2500);
-    }
+    function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
 </script>
 </body>
 </html>
