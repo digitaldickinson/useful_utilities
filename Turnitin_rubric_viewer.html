@@ -124,7 +124,7 @@
 <div id="toast"></div>
 
 <div class="container">
-    <header><h1 id="title">RBSEE:Turnitin - Rubric Tool</h1></header>
+    <header><h1>RBSEE:Turnitin - Rubric Tool</h1></header>
     <div id="editBanner">EDIT MODE ACTIVE — Click any cell to edit the full block</div>
 
     <div class="controls">
@@ -161,14 +161,14 @@
         const reader = new FileReader();
         reader.onload = e => {
             try {
-                rubricData = JSON.parse(e.target.result);
-                saveToHistory();
-                render();
-                document.querySelectorAll('.controls button').forEach(b => b.disabled = false);
-                document.getElementById('title').textContent = rubricData.name || 'Rubric Tool';
-                showToast("File Loaded");
-            } catch (err) { alert("Invalid RBC file."); }
-        };
+            rubricData = JSON.parse(e.target.result);
+            saveToHistory();
+            render();
+            document.querySelectorAll('.controls button').forEach(b => b.disabled = false);
+            // The line that was here is now gone!
+            showToast("File Loaded");
+        } catch (err) { alert("Invalid RBC file."); }
+    };
         reader.readAsText(file);
     }
 
