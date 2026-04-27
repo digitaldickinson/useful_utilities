@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RBSEE : Turnitin - Rubric Tool</title>
+    <title>RBSEE:Turnitin - Rubric Tool</title>
     
     <script src="https://cdn.jsdelivr.net/npm/docx@9.6.1/dist/index.iife.min.js"></script>
 
@@ -62,7 +62,7 @@
         
         th, td { 
             border: 1px solid var(--border); 
-            padding: 0; /* Padding moved to inner wrapper for better editing click area */
+            padding: 0; 
             font-size: 14px; 
             vertical-align: top; 
             background: white;
@@ -82,7 +82,7 @@
         .col-scale { width: 300px; min-width: 300px; }
         th { background: var(--primary); color: white; font-weight: 600; position: sticky; top: 0; padding: 16px; }
 
-        /* Cell Content Wrapper for "Full Cell" Editing */
+        /* Cell Content Wrapper */
         .cell-content {
             padding: 16px;
             min-height: 60px;
@@ -124,7 +124,7 @@
 <div id="toast"></div>
 
 <div class="container">
-    <header><h1 id="title">RBSEE: Turnitin - Rubric Tool</h1></header>
+    <header><h1 id="title">RBSEE:Turnitin - Rubric Tool</h1></header>
     <div id="editBanner">EDIT MODE ACTIVE — Click any cell to edit the full block</div>
 
     <div class="controls">
@@ -136,7 +136,7 @@
         <button id="undoBtn" class="btn-indigo" style="background:#94a3b8" onclick="undo()" disabled>Undo</button>
         <button id="addCritBtn" class="btn-green" onclick="addCriterion()" disabled>+ Criterion</button>
         <button id="saveRbcBtn" class="btn-green" onclick="downloadRBC()" disabled>Save RBC</button>
-        <button id="exportBtn" class="btn-indigo" onclick="exportToWord()" disabled>Export .docx</button>
+        <button id="exportBtn" class="btn-indigo" onclick="exportToWord()" disabled>Export .docx (Landscape)</button>
     </div>
 
     <div class="table-wrapper">
@@ -188,7 +188,6 @@
         }
     }
 
-    // --- Render with Cell-Level Editing ---
     function render() {
         if (!rubricData) return;
         const criteria = rubricData.RubricCriterion;
@@ -232,12 +231,10 @@
         document.getElementById('tableBody').innerHTML = bodyHtml;
     }
 
-    // --- New Update Logic to parse inner elements ---
     function updateFullCrit(id, el) {
         const crit = rubricData.RubricCriterion.find(c => c.id === id);
         const nameEl = el.querySelector('.crit-name');
         const descEl = el.querySelector('.crit-desc');
-        
         if (crit) {
             let changed = false;
             if (nameEl && crit.name !== nameEl.innerText) { crit.name = nameEl.innerText; changed = true; }
@@ -258,16 +255,12 @@
         let s = rubricData.RubricCriterionScale.find(sc => sc.criterion === critId && sc.scale_value === val);
         const descEl = el.querySelector('.scale-desc');
         const newText = descEl ? descEl.innerText : el.innerText;
-
         if (!s) {
             const newId = Math.max(0, ...rubricData.RubricCriterionScale.map(x => x.id)) + 1;
             s = { id: newId, criterion: critId, scale_value: val, name: "Level", description: "" };
             rubricData.RubricCriterionScale.push(s);
         }
-        if (s.description !== newText) {
-            s.description = newText;
-            saveToHistory();
-        }
+        if (s.description !== newText) { s.description = newText; saveToHistory(); }
     }
 
     function addCriterion() {
@@ -289,7 +282,12 @@
         saveToHistory(); render();
     }
 
-    function toggleEdit() { isEditMode = !isEditMode; document.getElementById('editBtn').textContent = isEditMode ? "Finish Editing" : "Enter Edit Mode"; document.getElementById('editBanner').classList.toggle('visible', isEditMode); render(); }
+    function toggleEdit() { 
+        isEditMode = !isEditMode; 
+        document.getElementById('editBtn').textContent = isEditMode ? "Finish Editing" : "Enter Edit Mode"; 
+        document.getElementById('editBanner').classList.toggle('visible', isEditMode); 
+        render(); 
+    }
 
     function downloadRBC() {
         const blob = new Blob([JSON.stringify(rubricData, null, 2)], { type: 'application/json' });
@@ -300,7 +298,7 @@
     async function exportToWord() {
         const d = window.docx;
         if (!d) return;
-        showToast("Exporting...");
+        showToast("Generating Landscape .docx...");
         try {
             const { Document, Packer, Table, TableRow, TableCell, Paragraph, TextRun, WidthType, PageOrientation, VerticalAlign, AlignmentType } = d;
             const criteria = rubricData.RubricCriterion;
@@ -319,10 +317,16 @@
             const dataRows = criteria.map(crit => {
                 return new TableRow({
                     children: [
-                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: crit.name, bold: true })] }), new Paragraph({ children: [new TextRun({ text: crit.description, size: 18, color: "64748b" })] })], width: { size: 25, type: WidthType.PERCENTAGE } }),
+                        new TableCell({ 
+                            children: [new Paragraph({ children: [new TextRun({ text: crit.name, bold: true })] }), new Paragraph({ children: [new TextRun({ text: crit.description, size: 18, color: "64748b" })] })], 
+                            width: { size: 25, type: WidthType.PERCENTAGE } 
+                        }),
                         ...uniqueValues.map(val => {
                             const s = scales.find(sc => sc.criterion === crit.id && sc.scale_value === val);
-                            return new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: s ? s.description : "", size: 18 })] })], width: { size: 75 / uniqueValues.length, type: WidthType.PERCENTAGE } });
+                            return new TableCell({ 
+                                children: [new Paragraph({ children: [new TextRun({ text: s ? s.description : "", size: 18 })] })], 
+                                width: { size: 75 / uniqueValues.length, type: WidthType.PERCENTAGE } 
+                            });
                         })
                     ]
                 });
@@ -330,10 +334,18 @@
 
             const doc = new Document({
                 sections: [{
-                    properties: { page: { orientation: PageOrientation.LANDSCAPE, margin: { top: 720, right: 720, bottom: 720, left: 720 } } },
+                    properties: {
+                        page: {
+                            size: { orientation: PageOrientation.LANDSCAPE },
+                            margin: { top: 720, right: 720, bottom: 720, left: 720 }
+                        }
+                    },
                     children: [
                         new Paragraph({ children: [new TextRun({ text: rubricData.name || "Rubric Export", bold: true, size: 32 })], spacing: { after: 200 } }),
-                        new Table({ rows: [headerRow, ...dataRows], width: { size: 100, type: WidthType.PERCENTAGE } })
+                        new Table({ 
+                            rows: [headerRow, ...dataRows], 
+                            width: { size: 100, type: WidthType.PERCENTAGE } 
+                        })
                     ]
                 }]
             });
@@ -341,8 +353,8 @@
             const blob = await Packer.toBlob(doc);
             const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${currentFileName}.docx`;
             document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            showToast("Success");
-        } catch (err) { alert("Failed"); }
+            showToast("Export Successful!");
+        } catch (err) { alert("Failed: " + err.message); }
     }
 
     function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
