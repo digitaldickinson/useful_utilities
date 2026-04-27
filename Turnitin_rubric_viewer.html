@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RBSEE:Turnitin - Rubric Tool (GitHub Edition)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
+    <style>
+        :root { --primary: #2c3e50; --accent: #3498db; --edit: #e67e22; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f4f7f6; padding: 20px; }
+        .container { background: white; padding: 25px; border-radius: 12px; max-width: 1600px; margin: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+
+        .controls { 
+            display: flex; gap: 10px; flex-wrap: wrap; background: #f1f2f6; 
+            padding: 20px; border-radius: 8px; margin-bottom: 20px; 
+            align-items: center; position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .drop-zone { border: 2px dashed #bdc3c7; border-radius: 6px; padding: 10px 16px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; background: white; }
+        .drop-zone input[type="file"] { display: none; }
+        
+        #editBanner { display: none; background: var(--edit); color: white; text-align: center; padding: 8px; border-radius: 6px; margin-bottom: 12px; font-weight: bold; }
+        #editBanner.visible { display: block; }
+
+        .table-wrapper { overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; background: white; }
+        table { width: 100%; border-collapse: collapse; min-width: 1200px; table-layout: fixed; }
+        th, td { border: 1px solid #dfe6e9; padding: 12px; font-size: 13px; vertical-align: top; word-wrap: break-word; }
+        th { background: var(--primary); color: white; height: 50px; text-align: left; }
+        
+        .col-crit { width: 300px; }
+        .sticky-col { position: sticky; left: 0; background: #f8f9fa !important; z-index: 5; border-right: 2px solid #ddd; }
+
+        button { border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; color: white; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-blue { background: var(--accent); }
+        .btn-orange { background: var(--edit); }
+        .btn-green { background: #27ae60; }
+        .btn-red { background: #e74c3c; }
+
+        .editing [contenteditable="true"] { background: #fff9e6; outline: 1px solid var(--edit); min-height: 1.2em; padding: 2px; }
+        .crit-name, .scale-name { font-weight: bold; display: block; color: var(--primary); }
+        .crit-desc, .scale-desc { font-size: 0.85em; color: #555; display: block; line-height: 1.4; }
+
+        #toast { position: fixed; bottom: 30px; right: 30px; background: #2d3436; color: white; padding: 12px 20px; border-radius: 8px; opacity: 0; transition: 0.3s; z-index: 1000; }
+        #toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div class="container">
+    <h1 id="title">RBSEE:Turnitin - Rubric Tool</h1>
+    <div id="editBanner">Edit Mode Active — Changes are kept in memory</div>
+
+    <div class="controls">
+        <label class="drop-zone" id="dropZone">
+            <input type="file" id="fileInput" accept=".rbc">
+            <span id="dropZoneLabel">📁 Drop .rbc or Click to Browse</span>
+        </label>
+        <button id="editBtn" class="btn-orange" onclick="toggleEdit()" disabled>Enter Edit Mode</button>
+        <button id="undoBtn" class="btn-blue" style="background:#95a5a6" onclick="undo()" disabled>Undo</button>
+        <button id="addCritBtn" class="btn-green" onclick="addCriterion()" disabled>+ Criterion</button>
+        <button id="saveRbcBtn" class="btn-green" onclick="downloadRBC()" disabled>Save RBC</button>
+        <button id="exportBtn" class="btn-blue" onclick="exportToWord()" disabled>Export .docx (Landscape)</button>
+    </div>
+
+    <div id="rubric-content" class="table-wrapper">
+        <table id="rubricTable">
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let rubricData = null;
+    let isEditMode = false;
+    let history = [];
+    let historyIndex = -1;
+    let currentFileName = "Rubric_Export";
+
+    // --- File Handling ---
+    document.getElementById('fileInput').onchange = e => {
+        if (e.target.files[0]) loadFile(e.target.files[0]);
+    };
+
+    function loadFile(file) {
+        currentFileName = file.name.replace(/\.[^/.]+$/, "");
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                rubricData = JSON.parse(e.target.result);
+                saveToHistory();
+                render();
+                toggleButtons(true);
+                document.getElementById('title').textContent = `RBSEE:Turnitin — ${rubricData.name || 'Rubric'}`;
+            } catch (err) { alert("Invalid RBC file."); }
+        };
+        reader.readAsText(file);
+    }
+
+    function toggleButtons(enabled) {
+        ['editBtn', 'saveRbcBtn', 'exportBtn'].forEach(id => {
+            document.getElementById(id).disabled = !enabled;
+        });
+    }
+
+    function saveToHistory() {
+        if (historyIndex < history.length - 1) history = history.slice(0, historyIndex + 1);
+        history.push(JSON.parse(JSON.stringify(rubricData)));
+        historyIndex++;
+        document.getElementById('undoBtn').disabled = historyIndex <= 0;
+    }
+
+    function undo() {
+        if (historyIndex > 0) {
+            historyIndex--;
+            rubricData = JSON.parse(JSON.stringify(history[historyIndex]));
+            render();
+            document.getElementById('undoBtn').disabled = historyIndex <= 0;
+        }
+    }
+
+    function render() {
+        if (!rubricData) return;
+        const criteria = rubricData.RubricCriterion;
+        const scales = rubricData.RubricCriterionScale;
+        const uniqueValues = [...new Set(scales.map(s => s.scale_value))].sort((a, b) => a - b);
+        const valToName = {};
+        scales.forEach(s => { if (!valToName[s.scale_value]) valToName[s.scale_value] = s.name || "Level"; });
+
+        let headHtml = `<tr><th class="sticky-col col-crit">Criterion</th>`;
+        uniqueValues.forEach(v => {
+            headHtml += `<th>
+                <span class="scale-name" contenteditable="${isEditMode}" onblur="updateGlobalScaleName(${v}, this)">${valToName[v]}</span>
+                <span style="font-size:0.7em; opacity:0.8;">Value: ${v}</span>
+            </th>`;
+        });
+        headHtml += `</tr>`;
+        document.getElementById('tableHead').innerHTML = headHtml;
+
+        let bodyHtml = "";
+        criteria.forEach(crit => {
+            bodyHtml += `<tr>
+                <td class="sticky-col col-crit">
+                    <span class="crit-name" contenteditable="${isEditMode}" onblur="updateCritData(${crit.id}, 'name', this)">${crit.name}</span>
+                    <span class="crit-desc" contenteditable="${isEditMode}" onblur="updateCritData(${crit.id}, 'description', this)">${crit.description}</span>
+                    ${isEditMode ? `<button class="btn-red" style="padding:4px; font-size:10px; margin-top:5px;" onclick="deleteCrit(${crit.id})">Delete</button>` : ''}
+                </td>`;
+            uniqueValues.forEach(val => {
+                const s = scales.find(sc => sc.criterion === crit.id && sc.scale_value === val);
+                bodyHtml += `<td>
+                    <span class="scale-desc" contenteditable="${isEditMode}" onblur="updateScaleDesc(${crit.id}, ${val}, this)">${s ? s.description : ''}</span>
+                </td>`;
+            });
+            bodyHtml += `</tr>`;
+        });
+        document.getElementById('tableBody').innerHTML = bodyHtml;
+    }
+
+    // --- Updates ---
+    function updateCritData(id, field, el) {
+        const crit = rubricData.RubricCriterion.find(c => c.id === id);
+        if (crit && crit[field] !== el.innerText) {
+            crit[field] = el.innerText;
+            saveToHistory();
+        }
+    }
+
+    function updateGlobalScaleName(val, el) {
+        rubricData.RubricCriterionScale.forEach(s => {
+            if (s.scale_value === val) s.name = el.innerText;
+        });
+        saveToHistory();
+    }
+
+    function updateScaleDesc(critId, val, el) {
+        let s = rubricData.RubricCriterionScale.find(sc => sc.criterion === critId && sc.scale_value === val);
+        if (!s) {
+            const newId = Math.max(0, ...rubricData.RubricCriterionScale.map(x => x.id)) + 1;
+            const existingName = rubricData.RubricCriterionScale.find(x => x.scale_value === val)?.name || "Level";
+            s = { id: newId, criterion: critId, scale_value: val, name: existingName, description: "" };
+            rubricData.RubricCriterionScale.push(s);
+        }
+        if (s.description !== el.innerText) {
+            s.description = el.innerText;
+            saveToHistory();
+        }
+    }
+
+    function addCriterion() {
+        const newCritId = Math.max(0, ...rubricData.RubricCriterion.map(c => c.id)) + 1;
+        rubricData.RubricCriterion.push({ id: newCritId, name: "New Criterion", description: "Weight info" });
+        const uniqueValues = [...new Set(rubricData.RubricCriterionScale.map(s => s.scale_value))];
+        uniqueValues.forEach(v => {
+            const name = rubricData.RubricCriterionScale.find(s => s.scale_value === v)?.name || "Level";
+            const newScaleId = Math.max(0, ...rubricData.RubricCriterionScale.map(x => x.id)) + 1;
+            rubricData.RubricCriterionScale.push({ id: newScaleId, criterion: newCritId, scale_value: v, name: name, description: "" });
+        });
+        saveToHistory();
+        render();
+    }
+
+    function deleteCrit(id) {
+        if (!confirm("Delete criterion?")) return;
+        rubricData.RubricCriterion = rubricData.RubricCriterion.filter(c => c.id !== id);
+        rubricData.RubricCriterionScale = rubricData.RubricCriterionScale.filter(s => s.criterion !== id);
+        saveToHistory();
+        render();
+    }
+
+    function toggleEdit() {
+        isEditMode = !isEditMode;
+        document.getElementById('editBtn').textContent = isEditMode ? "Exit Edit Mode" : "Enter Edit Mode";
+        document.getElementById('editBanner').classList.toggle('visible', isEditMode);
+        document.getElementById('addCritBtn').disabled = !isEditMode;
+        render();
+    }
+
+    function downloadRBC() {
+        const blob = new Blob([JSON.stringify(rubricData, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${currentFileName}_edited.rbc`;
+        a.click();
+        showToast("RBC Saved.");
+    }
+
+    // --- RESTORED DOCX EXPORT (Requires HTTPS/Hosting) ---
+    async function exportToWord() {
+        if (typeof docx === 'undefined') {
+            alert("Library not loaded. Please ensure you are viewing this via HTTPS (GitHub Pages).");
+            return;
+        }
+        showToast("Generating .docx...");
+        try {
+            const { Document, Packer, Table, TableRow, TableCell, Paragraph, TextRun, WidthType, PageOrientation, BorderStyle } = docx;
+
+            const criteria = rubricData.RubricCriterion;
+            const scales = rubricData.RubricCriterionScale;
+            const uniqueValues = [...new Set(scales.map(s => s.scale_value))].sort((a, b) => a - b);
+            const valToName = {};
+            scales.forEach(s => { if (!valToName[s.scale_value]) valToName[s.scale_value] = s.name || "Level"; });
+
+            const headerRow = new TableRow({
+                children: [
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Criterion", bold: true })] })], shading: { fill: "E7E7E7" } }),
+                    ...uniqueValues.map(v => new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `${valToName[v]} (${v})`, bold: true })] })], shading: { fill: "E7E7E7" } }))
+                ]
+            });
+
+            const dataRows = criteria.map(crit => {
+                return new TableRow({
+                    children: [
+                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: crit.name, bold: true })] }), new Paragraph({ children: [new TextRun({ text: crit.description, size: 18 })] })] }),
+                        ...uniqueValues.map(val => {
+                            const s = scales.find(sc => sc.criterion === crit.id && sc.scale_value === val);
+                            return new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: s ? s.description : "", size: 18 })] })] });
+                        })
+                    ]
+                });
+            });
+
+            const doc = new Document({
+                sections: [{
+                    properties: { page: { orientation: PageOrientation.LANDSCAPE } },
+                    children: [new Table({ rows: [headerRow, ...dataRows], width: { size: 100, type: WidthType.PERCENTAGE } })]
+                }]
+            });
+
+            const blob = await Packer.toBlob(doc);
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = `${currentFileName}.docx`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showToast("Export Complete!");
+        } catch (err) {
+            console.error(err);
+            alert("Export failed. Check console for details.");
+        }
+    }
+
+    function showToast(m) {
+        const t = document.getElementById('toast');
+        t.innerText = m; t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2500);
+    }
+</script>
+</body>
+</html>
