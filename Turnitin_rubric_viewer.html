@@ -3,49 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RBSEE:Turnitin - Rubric Tool (Clean Interface)</title>
+    <title>RBSEE : Turnitin - Rubric Tool</title>
     
     <script src="https://cdn.jsdelivr.net/npm/docx@9.6.1/dist/index.iife.min.js"></script>
 
     <style>
-        :root { --primary: #2c3e50; --accent: #3498db; --edit: #e67e22; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f4f7f6; padding: 20px; }
-        .container { background: white; padding: 25px; border-radius: 12px; max-width: 1600px; margin: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        
-        .controls { 
-            display: flex; gap: 10px; flex-wrap: wrap; background: #f1f2f6; 
-            padding: 20px; border-radius: 8px; margin-bottom: 20px; 
-            align-items: center; position: sticky; top: 0; z-index: 100;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        :root { 
+            --primary: #1e293b; 
+            --primary-light: #334155;
+            --accent: #6366f1; 
+            --accent-hover: #4f46e5;
+            --edit: #f59e0b; 
+            --danger: #ef4444;
+            --success: #10b981;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
         }
 
-        .drop-zone { border: 2px dashed #bdc3c7; border-radius: 6px; padding: 10px 16px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; background: white; }
-        .drop-zone input[type="file"] { display: none; }
-        
-        #editBanner { display: none; background: var(--edit); color: white; text-align: center; padding: 8px; border-radius: 6px; margin-bottom: 12px; font-weight: bold; }
+        body { 
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; 
+            background: var(--bg); 
+            color: var(--primary);
+            margin: 0;
+            padding: 20px; 
+        }
+
+        .container { 
+            background: var(--card-bg); 
+            border-radius: 16px; 
+            max-width: 100%; 
+            margin: auto; 
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        header { padding: 20px 32px; background: white; border-bottom: 1px solid var(--border); }
+        h1 { margin: 0; font-size: 1.25rem; font-weight: 700; }
+
+        .controls { 
+            display: flex; gap: 12px; flex-wrap: wrap; background: #f1f5f9; 
+            padding: 12px 32px; align-items: center; position: sticky; 
+            top: 0; z-index: 100; border-bottom: 1px solid var(--border);
+        }
+
+        .drop-zone { 
+            border: 2px dashed #cbd5e1; border-radius: 8px; padding: 6px 14px; 
+            display: inline-flex; align-items: center; gap: 8px; cursor: pointer; 
+            background: white; font-size: 13px; font-weight: 500;
+        }
+
+        #editBanner { display: none; background: var(--edit); color: white; text-align: center; padding: 6px; font-size: 12px; font-weight: 600; }
         #editBanner.visible { display: block; }
 
-        .table-wrapper { overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; background: white; }
-        table { width: 100%; border-collapse: collapse; min-width: 1200px; table-layout: fixed; }
-        th, td { border: 1px solid #dfe6e9; padding: 12px; font-size: 13px; vertical-align: top; word-wrap: break-word; }
-        th { background: var(--primary); color: white; height: 60px; text-align: left; }
+        .table-wrapper { overflow-x: auto; width: 100%; position: relative; background: white; }
+        table { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; }
         
-        .col-crit { width: 300px; }
-        .sticky-col { position: sticky; left: 0; background: #f8f9fa !important; z-index: 5; border-right: 2px solid #ddd; }
+        th, td { 
+            border: 1px solid var(--border); 
+            padding: 0; /* Padding moved to inner wrapper for better editing click area */
+            font-size: 14px; 
+            vertical-align: top; 
+            background: white;
+        }
 
-        button { border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; color: white; }
-        button:disabled { opacity: 0.4; cursor: not-allowed; }
-        .btn-blue { background: var(--accent); }
+        /* Fixed Sidebar */
+        .col-crit { width: 350px; min-width: 350px; }
+        .sticky-col { 
+            position: sticky; 
+            left: 0; 
+            z-index: 10; 
+            background: #fafafa !important; 
+            border-right: 3px solid var(--border) !important;
+        }
+        th.sticky-col { background: var(--primary) !important; color: white; z-index: 20; padding: 16px; }
+
+        .col-scale { width: 300px; min-width: 300px; }
+        th { background: var(--primary); color: white; font-weight: 600; position: sticky; top: 0; padding: 16px; }
+
+        /* Cell Content Wrapper for "Full Cell" Editing */
+        .cell-content {
+            padding: 16px;
+            min-height: 60px;
+            height: 100%;
+            width: 100%;
+            box-sizing: border-box;
+            transition: background 0.2s;
+        }
+
+        .editing .cell-content[contenteditable="true"]:hover {
+            background: #fffbeb;
+            cursor: text;
+        }
+
+        .editing .cell-content[contenteditable="true"]:focus {
+            background: white;
+            outline: 2px solid var(--edit);
+            outline-offset: -2px;
+            box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.1);
+        }
+
+        button { border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; color: white; font-size: 13px; }
+        .btn-indigo { background: var(--accent); }
         .btn-orange { background: var(--edit); }
-        .btn-green { background: #27ae60; }
-        .btn-red { background: #e74c3c; }
+        .btn-green { background: var(--success); }
+        .btn-red { background: var(--danger); font-size: 11px; margin-top: 10px; }
 
-        .editing [contenteditable="true"] { background: #fff9e6; outline: 1px solid var(--edit); min-height: 1.2em; padding: 2px; }
-        .crit-name, .scale-name { font-weight: bold; display: block; color: var(--primary); }
-        .crit-desc, .scale-desc { font-size: 0.85em; color: #555; display: block; line-height: 1.4; }
+        .crit-name { font-weight: 700; display: block; margin-bottom: 4px; pointer-events: none; }
+        .scale-name { font-weight: 700; display: block; pointer-events: none; }
+        .crit-desc, .scale-desc { font-size: 0.85rem; color: #64748b; line-height: 1.6; pointer-events: none; }
+        .scale-meta { font-size: 10px; text-transform: uppercase; opacity: 0.6; display: block; margin-top: 4px; pointer-events: none; }
 
-        #toast { position: fixed; bottom: 30px; right: 30px; background: #2d3436; color: white; padding: 12px 20px; border-radius: 8px; opacity: 0; transition: 0.3s; z-index: 1000; pointer-events: none; }
-        #toast.show { opacity: 1; }
+        #toast { position: fixed; bottom: 30px; right: 30px; background: var(--primary); color: white; padding: 12px 24px; border-radius: 12px; opacity: 0; transition: 0.3s; z-index: 1000; }
+        #toast.show { opacity: 1; transform: translateY(-5px); }
     </style>
 </head>
 <body>
@@ -53,8 +124,8 @@
 <div id="toast"></div>
 
 <div class="container">
-    <h1 id="title">RBSEE:Turnitin - Rubric Tool</h1>
-    <div id="editBanner">Edit Mode Active — Unsaved changes in memory</div>
+    <header><h1 id="title">RBSEE: Turnitin - Rubric Tool</h1></header>
+    <div id="editBanner">EDIT MODE ACTIVE — Click any cell to edit the full block</div>
 
     <div class="controls">
         <label class="drop-zone" id="dropZone">
@@ -62,13 +133,13 @@
             <span id="dropZoneLabel">📁 Upload .rbc</span>
         </label>
         <button id="editBtn" class="btn-orange" onclick="toggleEdit()" disabled>Enter Edit Mode</button>
-        <button id="undoBtn" class="btn-blue" style="background:#95a5a6" onclick="undo()" disabled>Undo</button>
+        <button id="undoBtn" class="btn-indigo" style="background:#94a3b8" onclick="undo()" disabled>Undo</button>
         <button id="addCritBtn" class="btn-green" onclick="addCriterion()" disabled>+ Criterion</button>
         <button id="saveRbcBtn" class="btn-green" onclick="downloadRBC()" disabled>Save RBC</button>
-        <button id="exportBtn" class="btn-blue" onclick="exportToWord()" disabled>Export .docx (Landscape)</button>
+        <button id="exportBtn" class="btn-indigo" onclick="exportToWord()" disabled>Export .docx</button>
     </div>
 
-    <div id="rubric-content" class="table-wrapper">
+    <div class="table-wrapper">
         <table id="rubricTable">
             <thead id="tableHead"></thead>
             <tbody id="tableBody"></tbody>
@@ -83,7 +154,6 @@
     let historyIndex = -1;
     let currentFileName = "Rubric_Export";
 
-    // --- File Input ---
     document.getElementById('fileInput').onchange = e => { if (e.target.files[0]) loadFile(e.target.files[0]); };
 
     function loadFile(file) {
@@ -95,13 +165,13 @@
                 saveToHistory();
                 render();
                 document.querySelectorAll('.controls button').forEach(b => b.disabled = false);
-                document.getElementById('title').textContent = `RBSEE:Turnitin — ${rubricData.name || 'Rubric'}`;
-            } catch (err) { alert("Error parsing RBC file."); }
+                document.getElementById('title').textContent = rubricData.name || 'Rubric Tool';
+                showToast("File Loaded");
+            } catch (err) { alert("Invalid RBC file."); }
         };
         reader.readAsText(file);
     }
 
-    // --- State/History ---
     function saveToHistory() {
         if (historyIndex < history.length - 1) history = history.slice(0, historyIndex + 1);
         history.push(JSON.parse(JSON.stringify(rubricData)));
@@ -118,7 +188,7 @@
         }
     }
 
-    // --- Render (Point IDs Removed) ---
+    // --- Render with Cell-Level Editing ---
     function render() {
         if (!rubricData) return;
         const criteria = rubricData.RubricCriterion;
@@ -127,11 +197,13 @@
         const valToName = {};
         scales.forEach(s => { if (!valToName[s.scale_value]) valToName[s.scale_value] = s.name || "Level"; });
 
-        let headHtml = `<tr><th class="sticky-col col-crit">Criterion</th>`;
+        let headHtml = `<tr><th class="sticky-col col-crit">Criterion / Weights</th>`;
         uniqueValues.forEach((v, index) => {
-            headHtml += `<th>
-                <span class="scale-name" contenteditable="${isEditMode}" onblur="updateGlobalScaleName(${v}, this)">${valToName[v]}</span>
-                <span style="font-size:0.7em; opacity:0.8; font-weight:normal;">Scale ${index + 1}</span>
+            headHtml += `<th class="col-scale">
+                <div class="cell-content" contenteditable="${isEditMode}" onblur="updateGlobalScaleName(${v}, this)">
+                    <span class="scale-name">${valToName[v]}</span>
+                    <span class="scale-meta">Scale ${index + 1}</span>
+                </div>
             </th>`;
         });
         headHtml += `</tr>`;
@@ -141,14 +213,18 @@
         criteria.forEach(crit => {
             bodyHtml += `<tr>
                 <td class="sticky-col col-crit">
-                    <span class="crit-name" contenteditable="${isEditMode}" onblur="updateCritData(${crit.id}, 'name', this)">${crit.name}</span>
-                    <span class="crit-desc" contenteditable="${isEditMode}" onblur="updateCritData(${crit.id}, 'description', this)">${crit.description}</span>
-                    ${isEditMode ? `<button class="btn-red" style="padding:4px; font-size:10px; margin-top:5px;" onclick="deleteCrit(${crit.id})">Delete</button>` : ''}
+                    <div class="cell-content" contenteditable="${isEditMode}" onblur="updateFullCrit(${crit.id}, this)">
+                        <span class="crit-name">${crit.name}</span>
+                        <span class="crit-desc">${crit.description}</span>
+                    </div>
+                    ${isEditMode ? `<div style="padding:0 16px 16px 16px"><button class="btn-red" onclick="deleteCrit(${crit.id})">Remove Row</button></div>` : ''}
                 </td>`;
             uniqueValues.forEach(val => {
                 const s = scales.find(sc => sc.criterion === crit.id && sc.scale_value === val);
-                bodyHtml += `<td>
-                    <span class="scale-desc" contenteditable="${isEditMode}" onblur="updateScaleDesc(${crit.id}, ${val}, this)">${s ? s.description : ''}</span>
+                bodyHtml += `<td class="col-scale">
+                    <div class="cell-content" contenteditable="${isEditMode}" onblur="updateScaleDesc(${crit.id}, ${val}, this)">
+                        <span class="scale-desc">${s ? s.description : ''}</span>
+                    </div>
                 </td>`;
             });
             bodyHtml += `</tr>`;
@@ -156,19 +232,42 @@
         document.getElementById('tableBody').innerHTML = bodyHtml;
     }
 
-    // --- Data Updates ---
-    function updateCritData(id, field, el) { rubricData.RubricCriterion.find(c => c.id === id)[field] = el.innerText; saveToHistory(); }
-    function updateGlobalScaleName(val, el) { rubricData.RubricCriterionScale.filter(s => s.scale_value === val).forEach(s => s.name = el.innerText); saveToHistory(); }
+    // --- New Update Logic to parse inner elements ---
+    function updateFullCrit(id, el) {
+        const crit = rubricData.RubricCriterion.find(c => c.id === id);
+        const nameEl = el.querySelector('.crit-name');
+        const descEl = el.querySelector('.crit-desc');
+        
+        if (crit) {
+            let changed = false;
+            if (nameEl && crit.name !== nameEl.innerText) { crit.name = nameEl.innerText; changed = true; }
+            if (descEl && crit.description !== descEl.innerText) { crit.description = descEl.innerText; changed = true; }
+            if (changed) saveToHistory();
+        }
+    }
+
+    function updateGlobalScaleName(val, el) {
+        const nameEl = el.querySelector('.scale-name');
+        if (nameEl) {
+            rubricData.RubricCriterionScale.filter(s => s.scale_value === val).forEach(s => s.name = nameEl.innerText);
+            saveToHistory();
+        }
+    }
+
     function updateScaleDesc(critId, val, el) {
         let s = rubricData.RubricCriterionScale.find(sc => sc.criterion === critId && sc.scale_value === val);
+        const descEl = el.querySelector('.scale-desc');
+        const newText = descEl ? descEl.innerText : el.innerText;
+
         if (!s) {
             const newId = Math.max(0, ...rubricData.RubricCriterionScale.map(x => x.id)) + 1;
-            const existingName = rubricData.RubricCriterionScale.find(x => x.scale_value === val)?.name || "Level";
-            s = { id: newId, criterion: critId, scale_value: val, name: existingName, description: "" };
+            s = { id: newId, criterion: critId, scale_value: val, name: "Level", description: "" };
             rubricData.RubricCriterionScale.push(s);
         }
-        s.description = el.innerText;
-        saveToHistory();
+        if (s.description !== newText) {
+            s.description = newText;
+            saveToHistory();
+        }
     }
 
     function addCriterion() {
@@ -184,32 +283,26 @@
     }
 
     function deleteCrit(id) {
-        if (!confirm("Delete criterion?")) return;
+        if (!confirm("Delete?")) return;
         rubricData.RubricCriterion = rubricData.RubricCriterion.filter(c => c.id !== id);
         rubricData.RubricCriterionScale = rubricData.RubricCriterionScale.filter(s => s.criterion !== id);
         saveToHistory(); render();
     }
 
-    function toggleEdit() { isEditMode = !isEditMode; document.getElementById('editBanner').classList.toggle('visible', isEditMode); render(); }
+    function toggleEdit() { isEditMode = !isEditMode; document.getElementById('editBtn').textContent = isEditMode ? "Finish Editing" : "Enter Edit Mode"; document.getElementById('editBanner').classList.toggle('visible', isEditMode); render(); }
 
     function downloadRBC() {
         const blob = new Blob([JSON.stringify(rubricData, null, 2)], { type: 'application/json' });
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${currentFileName}_edited.rbc`; a.click();
-        showToast("RBC Saved.");
+        showToast("RBC Saved");
     }
 
-    // --- Export (Point IDs Removed) ---
     async function exportToWord() {
         const d = window.docx;
-        if (!d) {
-            alert("Library not found. Try a Hard Refresh (Cmd+Shift+R).");
-            return;
-        }
-
-        showToast("Generating Landscape .docx...");
+        if (!d) return;
+        showToast("Exporting...");
         try {
             const { Document, Packer, Table, TableRow, TableCell, Paragraph, TextRun, WidthType, PageOrientation, VerticalAlign, AlignmentType } = d;
-
             const criteria = rubricData.RubricCriterion;
             const scales = rubricData.RubricCriterionScale;
             const uniqueValues = [...new Set(scales.map(s => s.scale_value))].sort((a, b) => a - b);
@@ -218,41 +311,18 @@
 
             const headerRow = new TableRow({
                 children: [
-                    new TableCell({ 
-                        children: [new Paragraph({ 
-                            children: [new TextRun({ text: "Criterion", bold: true, color: "FFFFFF" })],
-                            alignment: AlignmentType.CENTER 
-                        })], 
-                        shading: { fill: "2c3e50" },
-                        verticalAlign: VerticalAlign.CENTER
-                    }),
-                    ...uniqueValues.map((v) => new TableCell({ 
-                        children: [new Paragraph({ 
-                            children: [new TextRun({ text: valToName[v], bold: true, color: "FFFFFF" })],
-                            alignment: AlignmentType.CENTER 
-                        })], 
-                        shading: { fill: "2c3e50" },
-                        verticalAlign: VerticalAlign.CENTER
-                    }))
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Criterion", bold: true, color: "FFFFFF" })], alignment: AlignmentType.CENTER })], shading: { fill: "1e293b" }, verticalAlign: VerticalAlign.CENTER }),
+                    ...uniqueValues.map(v => new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: valToName[v], bold: true, color: "FFFFFF" })], alignment: AlignmentType.CENTER })], shading: { fill: "1e293b" }, verticalAlign: VerticalAlign.CENTER }))
                 ]
             });
 
             const dataRows = criteria.map(crit => {
                 return new TableRow({
                     children: [
-                        new TableCell({ 
-                            children: [
-                                new Paragraph({ children: [new TextRun({ text: crit.name, bold: true })] }),
-                                new Paragraph({ children: [new TextRun({ text: crit.description, size: 18, color: "555555" })] })
-                            ],
-                            width: { size: 25, type: WidthType.PERCENTAGE }
-                        }),
+                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: crit.name, bold: true })] }), new Paragraph({ children: [new TextRun({ text: crit.description, size: 18, color: "64748b" })] })], width: { size: 25, type: WidthType.PERCENTAGE } }),
                         ...uniqueValues.map(val => {
                             const s = scales.find(sc => sc.criterion === crit.id && sc.scale_value === val);
-                            return new TableCell({ 
-                                children: [new Paragraph({ children: [new TextRun({ text: s ? s.description : "", size: 18 })] })],
-                                width: { size: 75 / uniqueValues.length, type: WidthType.PERCENTAGE }
-                            });
+                            return new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: s ? s.description : "", size: 18 })] })], width: { size: 75 / uniqueValues.length, type: WidthType.PERCENTAGE } });
                         })
                     ]
                 });
@@ -260,40 +330,22 @@
 
             const doc = new Document({
                 sections: [{
-                    properties: {
-                        page: {
-                            size: { orientation: PageOrientation.LANDSCAPE },
-                            margin: { top: 720, right: 720, bottom: 720, left: 720 }
-                        }
-                    },
+                    properties: { page: { orientation: PageOrientation.LANDSCAPE, margin: { top: 720, right: 720, bottom: 720, left: 720 } } },
                     children: [
-                        new Paragraph({
-                            children: [new TextRun({ text: rubricData.name || "Rubric Export", bold: true, size: 32 })],
-                            spacing: { after: 200 }
-                        }),
-                        new Table({ 
-                            rows: [headerRow, ...dataRows], 
-                            width: { size: 100, type: WidthType.PERCENTAGE } 
-                        })
+                        new Paragraph({ children: [new TextRun({ text: rubricData.name || "Rubric Export", bold: true, size: 32 })], spacing: { after: 200 } }),
+                        new Table({ rows: [headerRow, ...dataRows], width: { size: 100, type: WidthType.PERCENTAGE } })
                     ]
                 }]
             });
 
             const blob = await Packer.toBlob(doc);
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = `${currentFileName}.docx`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            showToast("Export Successful!");
-        } catch (err) {
-            console.error(err);
-            alert("Export failed.");
-        }
+            const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${currentFileName}.docx`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            showToast("Success");
+        } catch (err) { alert("Failed"); }
     }
 
-    function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
+    function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
 </script>
 </body>
 </html>
