@@ -76,7 +76,7 @@ summary::-webkit-details-marker{display:none}summary{list-style:none}
     </div>
     <div style="background:#E4E0D6;border:2px solid #15171A;border-radius:18px;padding:32px;display:flex;flex-direction:column;gap:22px">
       <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap">
-        <a id="copy-bookmark" href="#" draggable="true" style="display:inline-flex;align-items:center;gap:14px;background:#15171A;color:#F2EEE4;border:3px solid #15171A;font-size:28px;font-weight:800;padding:20px 32px;border-radius:14px;text-decoration:none;cursor:grab;box-shadow:0 6px 0 #8A8D92">
+        <a id="copy-bookmark" draggable="false" aria-disabled="true" style="display:inline-flex;align-items:center;gap:14px;background:#15171A;color:#F2EEE4;border:3px solid #15171A;font-size:28px;font-weight:800;padding:20px 32px;border-radius:14px;text-decoration:none;cursor:grab;box-shadow:0 6px 0 #8A8D92">
           <span style="font-size:32px">↳</span><span>Download story</span>
         </a>
         <div style="display:flex;align-items:center;gap:14px">
@@ -84,12 +84,13 @@ summary::-webkit-details-marker{display:none}summary{list-style:none}
           <div style="font-size:21px;font-weight:800;line-height:1.15">Drag to your open<br>bookmarks bar</div>
         </div>
       </div>
+      <p id="bookmark-error" role="alert" hidden style="margin:0;font-size:16px;line-height:1.5">The bookmark could not load. Reload this page. If this continues, ask your tutor for a working download page.</p>
       <details style="background:#fff;border-radius:12px;padding:16px 20px">
         <summary style="cursor:pointer;font-weight:800;font-size:17px">Can’t drag it? ▾</summary>
         <div style="display:flex;flex-direction:column;gap:12px;padding-top:12px">
           <p style="margin:0;font-size:16px;line-height:1.5">Add any bookmark, edit it, name it <strong>Download story</strong> and paste this whole address (starting <code style="font-family:'IBM Plex Mono',monospace">javascript:</code>) as its URL.</p>
           <textarea readonly spellcheck="false" rows="3" aria-label="Download story bookmark address" id="copy-code" style="width:100%;font:12px 'IBM Plex Mono',monospace;border:2px solid #15171A;border-radius:8px;padding:10px;background:#F2EEE4;resize:vertical"></textarea>
-          <div style="display:flex"><button id="copy-btn" type="button" style="font:800 16px Archivo,sans-serif;background:#15171A;color:#F2EEE4;border:0;border-radius:8px;padding:12px 20px;cursor:pointer">Copy bookmark</button></div>
+          <div style="display:flex"><button id="copy-btn" type="button" disabled style="font:800 16px Archivo,sans-serif;background:#15171A;color:#F2EEE4;border:0;border-radius:8px;padding:12px 20px;cursor:pointer">Copy bookmark</button></div>
         </div>
       </details>
     </div>
@@ -190,7 +191,13 @@ summary::-webkit-details-marker{display:none}summary{list-style:none}
   var url = window.CAPTURE_STUDENT_BOOKMARK;
   var link = $('copy-bookmark'), code = $('copy-code'), toast = $('toast'), tt;
   function say(msg) { toast.textContent = msg; toast.hidden = false; clearTimeout(tt); tt = setTimeout(function () { toast.hidden = true; }, 6000); }
+  if (typeof url !== 'string' || !/^javascript:\S/i.test(url)) {
+    $('bookmark-error').hidden = false;
+    link.addEventListener('dragstart', function (e) { e.preventDefault(); });
+    return;
+  }
   link.href = url; code.value = url;
+  link.draggable = true; link.removeAttribute('aria-disabled'); $('copy-btn').disabled = false;
   link.addEventListener('click', function (e) { e.preventDefault(); say('Drag the button to your bookmarks bar, then click the bookmark while viewing your Shorthand story.'); });
   $('copy-btn').addEventListener('click', function () {
     navigator.clipboard.writeText(url).then(function () { say('Address copied. Paste it as the URL of a new bookmark.'); },
