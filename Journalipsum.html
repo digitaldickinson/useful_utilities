@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Journalipsum: The Journalese Generator</title>
+<style>
+:root{font-family:ui-sans-serif,system-ui,sans-serif;color:#202020;background:#fff7dc}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 90% 12%,#ffd6ba 0,transparent 27%),radial-gradient(circle at 3% 60%,#d8f5e8 0,transparent 32%),#fff7dc}button,select{font:inherit}button{cursor:pointer}.mast{background:#272052;color:white;border-bottom:6px solid #19142e;position:relative;overflow:hidden}.mast:after{content:'✦';position:absolute;right:18%;top:-54px;font-size:150px;color:#ffffff12;transform:rotate(18deg);pointer-events:none}.mastinner{max-width:1180px;margin:auto;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;gap:20px;position:relative;z-index:1}.brand{font-family:Arial,sans-serif;font-size:clamp(31px,4.5vw,50px);font-weight:700;letter-spacing:-2.6px;line-height:1}.brand em{color:#ffdd54;font-style:normal}.tag{font-size:12px;font-weight:900;letter-spacing:.11em;text-transform:uppercase;text-align:right;line-height:1.5;transform:rotate(3deg);background:#ffdd54;color:#26204e;border:2px solid #181331;padding:8px 12px;box-shadow:4px 4px 0 #080618}.ticker{display:flex;align-items:center;overflow:hidden;background:#f9d93b;border-bottom:3px solid #23202b;color:#221c3d;min-height:39px}.ticker b{background:#ff5b48;color:white;padding:11px 17px;white-space:nowrap;font-size:11px;letter-spacing:.1em;border-right:3px solid #222}.ticker span{white-space:nowrap;font-weight:900;letter-spacing:.04em;font-size:12px;padding:0 20px;overflow:hidden;text-overflow:ellipsis}.container{max-width:1180px;margin:auto;padding:34px 24px 65px}.intro{position:relative;max-width:940px;margin-bottom:25px}.eyebrow{display:inline-block;background:#b6f4cb;border:2px solid #24202a;box-shadow:3px 3px 0 #24202a;transform:rotate(-2deg);padding:6px 10px;font-size:11px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}.intro h1{font-family:Arial,sans-serif;font-size:clamp(33px,4.9vw,61px);letter-spacing:-2.7px;line-height:1.04;margin:20px 0 12px;max-width:900px}.intro h1 .accent{color:#eb4b44;text-decoration:underline;text-decoration-color:#f0c533;text-decoration-thickness:7px;text-underline-offset:6px}.intro p{font-size:16px;line-height:1.55;max-width:750px;margin:0;color:#555260}.layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:26px;align-items:start}.panel,.paper{background:#fff;border:3px solid #252038;box-shadow:8px 8px 0 #252038}.panel{padding:23px;border-radius:15px;transform:rotate(-.35deg)}.panel h2{font-family:Arial,sans-serif;font-size:23px;letter-spacing:-.6px;margin:0 0 3px}.panel-sub{font-size:12px;font-weight:700;color:#77707f;margin-bottom:24px}.field{margin-bottom:20px}.field label{font-size:13px;font-weight:900;display:block;margin-bottom:9px}.split{display:flex;justify-content:space-between;align-items:center}.number{background:#ffdc55;border:2px solid #252038;padding:3px 10px;font-size:13px;font-weight:900;border-radius:20px}.field select{width:100%;background:#fbf8ef;border:2px solid #26223a;border-radius:9px;padding:11px 9px;font-size:13px;font-weight:700;color:#272136}.field input[type=range]{width:100%;accent-color:#ed5e50;cursor:pointer}.toggle{display:flex;align-items:flex-start;gap:10px;font-size:13px;font-weight:700;line-height:1.4;margin:15px 0;cursor:pointer}.toggle input{width:18px;height:18px;flex-shrink:0;accent-color:#e95f4d;cursor:pointer}.actions{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:24px}.actions button{padding:14px 13px;border:2px solid #242036;border-radius:10px;font-weight:900;box-shadow:4px 4px 0 #242036;transition:transform .12s,box-shadow .12s,background .12s}.actions button:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 #242036}.actions button:active{transform:translate(3px,3px);box-shadow:1px 1px 0 #242036}.primary{background:#fa6752;color:#22192f}.primary:hover{background:#ff846d}.secondary{background:#b9f1ce;color:#252038}.secondary:hover{background:#d1f9dc}.hint{font-size:11px;color:#716e76;line-height:1.55;margin:20px 0 0}.paper{position:relative;padding:clamp(25px,4vw,46px);border-radius:12px;background:#fffefa;min-height:480px;transform:rotate(.3deg)}.paper:before{content:'100% NEWS-FREE';position:absolute;right:25px;top:-15px;background:#c8b5ff;border:2px solid #241e36;padding:11px 17px;font-size:18px;font-weight:1000;letter-spacing:.05em;transform:rotate(7deg);box-shadow:4px 4px 0 #241e36}.paper-head{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:3px solid #28223a;padding-bottom:12px;margin-bottom:25px;color:#6e6974;text-transform:uppercase;font-size:10px;letter-spacing:.12em;font-weight:900}.story-top{margin-bottom:24px;border-bottom:2px dashed #d8d2df;padding-bottom:18px}.story-top:empty{display:none}.story-headline{font-family:Georgia,serif;font-size:clamp(24px,3.2vw,36px);line-height:1.12;letter-spacing:-.8px;margin:0 0 10px;color:#1d192b;font-weight:900}.story-standfirst{font-family:ui-sans-serif,system-ui,sans-serif;font-size:16px;line-height:1.5;color:#4f4b59;font-weight:700;margin:0}.copy-text{font-family:Georgia,serif;font-size:18px;line-height:1.73;color:#2d2b33}.copy-text p{margin:0 0 19px}.copy-text p:first-child{font-weight:700}.paper.broadcast{background:#f8fcff}.paper.broadcast .story-headline{font-family:Arial,Helvetica,sans-serif;font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:#2b7a73;margin-bottom:6px}.paper.broadcast .story-standfirst{font-family:Arial,Helvetica,sans-serif;font-size:17px;color:#243331;font-weight:700}.paper.broadcast .copy-text{font-family:Arial,Helvetica,sans-serif;font-size:19px;line-height:1.85;max-width:62ch}.paper.broadcast .copy-text p:first-child{font-weight:500}.paper.broadcast .paper-head{border-color:#50aaa2}.endmark{font-size:20px;color:#f26250;margin-top:20px}.footer{text-align:center;font-size:12px;font-weight:800;color:#77717a;margin-top:35px}.toast{position:fixed;right:25px;bottom:25px;background:#252038;color:white;border:3px solid #ffda54;padding:15px 20px;border-radius:10px;font-weight:900;box-shadow:5px 5px 0 #ee6754;opacity:0;transform:translateY(14px) rotate(2deg);transition:.2s;pointer-events:none;z-index:5}.toast.visible{opacity:1;transform:translateY(0) rotate(-2deg)}.stamp{display:inline-block;color:#f35f4d;font-size:11px;font-weight:900;transform:rotate(-3deg);border:2px solid #f35f4d;padding:2px 6px;border-radius:4px;letter-spacing:.06em}.paper.pop{animation:pop .25s ease-out}@keyframes pop{0%{transform:rotate(.3deg) scale(.985)}60%{transform:rotate(-.5deg) scale(1.006)}100%{transform:rotate(.3deg) scale(1)}}@media(max-width:800px){.layout{grid-template-columns:1fr}.panel,.paper{transform:none}.container{padding-top:26px}.intro h1{letter-spacing:-1.5px}.paper{min-height:330px}.tag{font-size:10px}.mastinner{padding:17px}.ticker span{font-size:11px}}@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+.paper.magazine{background:#fffef9;font-family:Georgia,serif}.paper.magazine .story-headline{font-family:Georgia,serif;font-size:clamp(26px,3.5vw,40px);font-weight:400;font-style:italic;line-height:1.25;letter-spacing:-.5px;color:#111}.paper.magazine .story-standfirst{font-family:ui-sans-serif,system-ui,sans-serif;font-size:17px;font-weight:400;color:#555;line-height:1.6}.paper.magazine .copy-text{font-size:19px;line-height:1.85}.paper.magazine .copy-text p:first-child::first-letter{font-size:3.6em;float:left;line-height:0.8;padding-top:4px;padding-right:8px;padding-left:3px;font-weight:bold;color:#272052}
+</style>
+</head>
+<body>
+<header class="mast"><div class="mastinner"><div class="brand">Journal<em>ipsum.</em></div><div class="tag">All the words.<br>None of the news.</div></div></header><div class="ticker"><b>BREAKING-ISH</b><span id="tickerText">Bosses in eleventh-hour bid to axe probe amid mounting chaos &nbsp; ✦ &nbsp; Question mark hangs over sweeping changes &nbsp; ✦ &nbsp; Quiet but tense scenes as chiefs leave no stone unturned</span></div>
+<main class="container"><div class="intro"><div class="eyebrow">The world’s least essential newsroom tool ✨</div><h1>Big words. <span class="accent">Small news.</span> Zero facts.</h1></div>
+<div class="layout"><aside class="panel" aria-label="Generator settings"><h2>The waffle desk </h2><div class="panel-sub">Set your editorial standards. Then lower them.</div><div class="field"><label for="style">Pick your flavour of nonsense</label><select id="style"><option value="general">Print: national news</option><option value="local">Print: local newspaper</option><option value="politics">Print: Westminster / politics</option><option value="broadcast">Broadcast: written to be spoken</option><option value="business">Print: business & economy</option><option value="sport">Print: sports desk</option><option value="press">Print: press release disguised as news</option><option value="magazine">Magazine: long-form feature</option></select></div><div class="field"><div class="split"><label for="paras">How much waffle?</label><span class="number" id="parasNumber">5</span></div><input type="range" id="paras" min="1" max="12" value="5"></div><div class="field"><label for="density">Cliché-o-meter</label><select id="density"><option value="1">1: Straight-faced (standard copy)</option><option value="2" selected>2: Newsroom standard (familiar tropes)</option><option value="3">3: Full Trenchcoat &amp; Trilby (MHM overload)</option></select><div id="densityNote" class="mode-note"></div></div><label class="toggle"><input type="checkbox" id="showHead" checked> <span id="headLabel">Include headline &amp; standfirst</span></label><label class="toggle"><input type="checkbox" id="quotes" checked> <span id="quoteLabel">Include anonymous quotes</span></label><div class="actions"><button class="primary" id="generate">FILE NON-STORY</button><button class="secondary" id="copy">Copy</button></div><p class="hint">Proudly locally generated. No facts, sources or journalism were consulted in the production of this copy.</p></aside>
+<article id="paper" class="paper" aria-label="Generated journalism copy"><div class="paper-head"><span id="mastName">THE DAILY NOTHING</span><span id="deskStamp" class="stamp">NATIONAL EDITION</span></div><div id="storyTop" class="story-top"></div><div class="copy-text" id="output" aria-live="polite"></div><div class="endmark">■</div></article></div><div class="footer">Journalipsum © Absolutely nobody · Every concern is growing · Every development is significant · Nobody was available for comment.</div></main><div id="toast" class="toast" role="status">Copied! Go forth and fill space. ✨</div>
+<script>
+const $=id=>document.getElementById(id),capitalize=s=>s.charAt(0).toUpperCase()+s.slice(1);
+
+function makeDeck(arr){
+  let pool=[];
+  return function draw(){
+    if(!pool.length){
+      pool=[...arr];
+      for(let i=pool.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [pool[i],pool[j]]=[pool[j],pool[i]];
+      }
+    }
+    return pool.pop();
+  };
+}
+
+// Each desk has standard vocabulary (Levels 1-2) PLUS a dedicated 'hack' overlay (Level 3)
+// packed with John Allen / Media Helping Media's Hall of Shame:
+// Wee Words (bid, probe, pledge, axe, plea, row, clash, quit, oust, quiz, vows, bosses, chiefs, mandarins),
+// Hack collocations (glaring omission, bated breath, bitter end, sweeping changes, chequered career,
+// daylight robbery, brutal reminder, foregone conclusion, wreak havoc, open secret, blazing inferno),
+// and Official/Police/Business jargon (apprehended, attended the scene, supply-day motion, paradigm shift, granularity).
+const banks={
+  general:{
+    edition:'NATIONAL EDITION',
+    subjects:['the latest round of developments','a series of emerging concerns','a long-running dispute','a proposed shake-up','the unfolding situation','a significant announcement','a high-profile intervention','a fresh wave of scrutiny'],
+    actors:['senior figures','key stakeholders','those close to the matter','independent observers','campaigners','official spokespeople','industry insiders','policy watchers'],
+    places:['across the country','in the sector','behind the scenes','at the heart of the debate','in recent weeks','at a national level'],
+    issues:['the wider implications','what happens next','the need for greater clarity','the scale of the challenge','questions over accountability','the long-term impact'],
+    verbs:['sparked fresh debate','raised further questions','prompted renewed calls for action','cast a spotlight on the issue','triggered a mixed reaction','heightened public scrutiny'],
+    hackSubjects:['a full-scale probe into a glaring omission','an eleventh-hour bid to avert sweeping changes','a dramatic manhunt shrouded in mystery','amiraculous mercy dash after a deafening crash','a bitter clash over a weighty matter','a fresh bungle that threatens to wreak havoc'].map(s=>s.replace('amiraculous','a miraculous')),
+    hackActors:['beleaguered bosses','red-faced chiefs','tight-lipped insiders','furious campaigners','officers who attended the scene','spokespeople quizzed by reporters'],
+    hackPlaces:['at breakneck speed','in thenick of time','amid scenes of absolute chaos','at the eleventh hour','in hot pursuit of answers','as emotions ran high'].map(s=>s.replace('thenick','the nick')),
+    hackIssues:['a brutal reminder of past blunders','what critics call an open secret','whether the move is a blessing in disguise','a question mark hanging over the bottom line','the gory details of the fiasco'],
+    hackVerbs:['spread like wildfire','brought the system grinding to a halt','sparked off a reign of terror','triggered off a last-ditch effort','left observers waiting with bated breath','exposed a glaring omission'],
+    tails:[
+      'Representatives for the relevant bodies were approached for comment ahead of publication.',
+      'Officers confirmed last night that two individuals are currently helping police with their inquiries after evidence was detected at the scene.',
+      'Officials maintained that no stone would be left unturned, adding that all representations would be carefully considered in the final analysis.'
+    ]
+  },
+  local:{
+    edition:'BOROUGH CHRONICLE',
+    subjects:['a town centre row','a proposal for a new community hub','a controversial parking shake-up','an ongoing bin collection dispute','the future of a much-loved local facility','a neighbourhood regeneration scheme','a disputed planning application'],
+    actors:['local residents','council bosses','concerned neighbours','ward councillors','community leaders','traders in the area','parish representatives'],
+    places:['on the high street','at a packed public meeting','in the town centre','across the borough','in the surrounding neighbourhood','outside the town hall'],
+    issues:['the impact on local people','the perceived lack of consultation','the character of the area','the mounting pressure on council services','the need to listen to taxpayers','traffic and parking provision'],
+    verbs:['sparked fury','divided opinion','prompted calls for answers','left residents demanding action','ignited fierce debate','drawn dozens of formal objections'],
+    hackSubjects:['a town hall axe hanging over a much-loved facility','an eleventh-hour plea to halt sweeping changes','a parking blunder branded daylight robbery','a road-rage clash on the high street','a full-scale probe into a bin-collection bungle','a blazing inferno row at a local beauty spot'],
+    hackActors:['furious ratepayers','red-faced town hall bosses','civic chiefs','up-in-arms traders','residents left in blissful ignorance','councillors locked in a marathon session'],
+    hackPlaces:['at a stormy town hall showdown','as emotions ran high on the high street','in a quiet but tense suburb','after tempers flared at point-blank range','amid a riot of colour at the civic centre'],
+    hackIssues:['claims of daylight robbery','a glaring omission in the consultation','fears the scheme will wreak havoc','whether the plans are already a foregone conclusion','the bitter end for high street parking'],
+    hackVerbs:['sparked off an almighty row','left the high street grinding to a halt','spread like wildfire across the borough','delivered a bitter blow to traders','triggered off a last-ditch petition'],
+    tails:[
+      'A council spokesperson said all feedback submitted during the statutory consultation window would be reviewed before the committee meets next month.',
+      'Emergency crews who rushed to the scene confirmed that one resident is now comfortable in hospital after undergoing surgery.',
+      'Nobody from the local authority was available to comment further when quizzed by reporters yesterday.'
+    ]
+  },
+  politics:{
+    edition:'WESTMINSTER DISPATCH',
+    subjects:['a fresh Westminster row','a major policy reset','a threatened backbench rebellion','a sudden government climbdown','a dispute over the direction of travel','a cross-party intervention','a leaked departmental memo'],
+    actors:['Downing Street sources','senior ministers','opposition MPs','rebel backbenchers','Whitehall insiders','party strategists','select committee members'],
+    places:['in Westminster','across Whitehall','at the despatch box','behind closed doors','in the parliamentary lobbies','amid mounting pressure in the Commons'],
+    issues:['the political fallout','the government’s next move','the wider legislative timetable','questions about ministerial judgement','the parliamentary arithmetic','fiscal credibility'],
+    verbs:['intensified pressure on ministers','fuelled Westminster speculation','exposed fresh party divisions','prompted a swift rebuttal','dominated the political agenda','tested party discipline'],
+    hackSubjects:['a plot to oust beleaguered party chiefs','an eleventh-hour bid to avert a three-line whip clash','a Whitehall probe into a ministerial blunder','a marathon negotiating session over a supply-day motion','a fresh axe blow to departmental budgets','a bitter row over sweeping changes in the pipeline'],
+    hackActors:['civil service mandarins','beleaguered ministers fighting for their political lives','serried ranks of mutinous backbenchers','Whitehall chiefs','spin doctors working through the usual channels','veteran MPs with a chequered career'],
+    hackPlaces:['after a marathon session behind closed doors','in a strife-torn parliamentary party','as the jobs axe remorselessly fell across Whitehall','amid a whirlwind tour of television studios','on the horns of a political dilemma'],
+    hackIssues:['whether the beleaguered leader’s grip on power is weakening','collateral damage from the latest U-turn','an uneasy peace brokered through the usual channels','a brutal reminder of the parliamentary arithmetic','whether the climbdown marks the beginning of the end'],
+    hackVerbs:['plunged Westminster into chaos','dealt a hammer blow to ministerial authority','sparked off a bloody confrontation in the lobbies','left mandarins burning the midnight oil','exposed the party’s true colours'],
+    tails:[
+      'Downing Street insisted last night that the Prime Minister retains full confidence in the department’s approach.',
+      'Opposition frontbenchers have tabled a supply-day motion through the usual channels demanding an urgent probe when the House returns.',
+      'Number 10 declined to comment on internal discussions, insisting ministers are leaving no stone unturned.'
+    ]
+  },
+  broadcast:{
+    edition:'LIVE SCRIPT: CUE & PACKAGE',
+    subjects:['a developing story','a wave of fresh concern','a major announcement','a growing row','the latest twist in a long-running dispute','an urgent call for action','a fresh set of questions'],
+    actors:['officials','people affected','senior sources','those involved','campaigners','correspondents','community voices'],
+    places:['tonight','earlier today','in the latest developments','as the situation unfolds','across the region','here on the ground'],
+    issues:['what it means for families','the next steps','why it matters now','the full picture','the response from those in charge','who pays the price'],
+    verbs:['prompted an immediate response','raised new concerns','led to fresh demands for answers','put the issue back in the spotlight','sparked a wider debate','left people looking for certainty'],
+    // Level 3 in Broadcast deliberately commits the cardinal sin John Allen warns against:
+    // reading print tabloid "Wee Words" (bid, probe, axe, pledge, plea, vowed) and police jargon aloud on air.
+    hackSubjects:['an eleventh-hour bid to block the jobs axe','a full-scale probe into a major bungle','a fresh clash after bosses moved the goalposts','a dramatic mercy dash to the scene','a bitter row that has spread like wildfire','an urgent plea from chiefs as chaos mounts'],
+    hackActors:['beleaguered bosses','red-faced chiefs','officials who attended the scene','insiders who have vowed to fight on','campaigners up in arms','mandarins quizzed by our correspondent'],
+    hackPlaces:['at the eleventh hour tonight','in a quiet but tense neighbourhood','as the calm before the storm gives way to chaos','after a marathon session of talks','here where the situation remains confused'],
+    hackIssues:['why a question mark hangs over the whole scheme','whether this is the beginning of the end','a glaring omission in the official probe','how bosses plan to create a level playing field','collateral damage for families on the ground'],
+    hackVerbs:['sparked off a furious row','brought services grinding to a halt','dealt a major blow to hopes of a deal','left people literally fighting for answers','triggered off a full-scale search for solutions'],
+    tails:[
+      'For now, though, those affected say they’ll be watching what happens next very closely.',
+      'Officials insist they are listening, but in the final analysis tonight, a question mark still hangs over the whole affair.',
+      'We asked for an interview this afternoon, but bosses were conspicuous by their absence.'
+    ]
+  },
+  business:{
+    edition:'MARKETS & CITY DESK',
+    subjects:['a spell of market uncertainty','a major strategic rethink','a shift in consumer confidence','an industry-wide shake-up','a wave of economic headwinds','a revised growth strategy','a surprise boardroom reshuffle'],
+    actors:['market analysts','business leaders','senior executives','industry watchers','institutional investors','economic commentators','shareholder groups'],
+    places:['across the sector','in a challenging trading environment','amid wider market pressures','on the back of recent figures','in the latest trading quarter','across the Square Mile'],
+    issues:['the outlook for growth','the pass-through impact on consumers','long-term investor confidence','future capital investment','the broader macroeconomic picture','margin resilience'],
+    verbs:['sent a cautious signal to markets','underlined ongoing uncertainty','raised questions about the outlook','prompted a valuation reassessment','put renewed focus on quarterly performance','weighed on sector sentiment'],
+    hackSubjects:['a boardroom bid to oust beleaguered bosses','a sweeping jobs axe across the sector','a paradigm shift in corporate governance','an eleventh-hour rescue package hammered out overnight','a shock profit warning caused by tight supply and demand','a boardroom clash over the granularity of the deal'],
+    hackActors:['City chiefs bullish on the company’s sales','beleaguered executives with a wealth of experience','shareholders concerned about the granularity of the deal','Square Mile insiders burning the midnight oil','analysts warning of collateral damage','bosses who vowed to deliver a major boost'],
+    hackPlaces:['amid tight supply and demand','at breakneck speed across the Square Mile','after a marathon boardroom session','as the jobs axe remorselessly falls','in a bid to restore a level playing field'],
+    hackIssues:['the bottom line after a chequered quarter','whether the paradigm shift will wreak havoc on margins','a glaring omission in the corporate governance probe','throughput and constructive dismissals across the division','a psychologically important threshold for investors'],
+    hackVerbs:['sent shockwaves through the Square Mile','brought deal-making grinding to a halt','delivered a major boost to bullish investors','sparked off a boardroom war of words','left the flagship division limping into port'],
+    tails:[
+      'Shares across the sector closed broadly flat as traders digested the implications ahead of next week’s update.',
+      'The chairman said he remained bullish on the company’s sales, insisting the new model would cause a paradigm shift despite concerns over the granularity of the deal.',
+      'The company declined to comment beyond its regulatory filing made to the market this morning.'
+    ]
+  },
+  sport:{
+    edition:'BACK PAGE FINAL',
+    subjects:['a dramatic late turnaround','a crucial run of fixtures','a controversial selection call','a season-defining encounter','a hard-fought contest','a pivotal moment in the campaign','a touchline flashpoint'],
+    actors:['coaching staff','travelling supporters','club officials','senior players','studio pundits','dressing room insiders','former professionals'],
+    places:['after the final whistle','on the training ground','ahead of the weekend fixture','in front of a vocal crowd','during a tense second half','in the post-match briefing'],
+    issues:['the battle for momentum','the bigger picture in the table','the squad’s immediate response','the demand for consistency','what comes next in the run-in','squad depth'],
+    verbs:['shifted the momentum','raised questions over tactics','kept hopes alive','put the spotlight firmly on the dugout','given fans plenty to debate','tested dressing-room resolve'],
+    hackSubjects:['an eleventh-hour bid to stave off the managerial axe','a touchline clash at point-blank range','a bitter dressing-room row over a glaring omission','a miraculous late rally at breakneck speed','a crucial six-pointer that proved a brutal reminder','a shock quit threat from the beleaguered boss'],
+    hackActors:['beleaguered dugout bosses','club chiefs locked in crisis talks','pundits waiting with bated breath','veteran pros with a wealth of experience','supporters who vowed to fight to the bitter end','insiders stunned by the selection blunder'],
+    hackPlaces:['at the moment of truth','as emotions ran high on the terraces','after a marathon inquest in the dressing room','in a cauldron of noise where there was no hiding place','ahead of a psychologically important clash'],
+    hackIssues:['whether the beleaguered boss is literally fighting for his job','accused officials of moving the goalposts','whether a defeat is now a foregone conclusion','a marked improvement needed to avoid the axe','who will show their true colours at the bitter end'],
+    hackVerbs:['dealt a hammer blow to title hopes','sparked off a furious tunnel row','left the campaign hanging by a thread','wreaked havoc on the manager’s game plan','turned the fixture into a moment of truth'],
+    tails:[
+      'With little time to dwell on the result, focus now shifts immediately to a pivotal trip away next weekend.',
+      'Club chiefs are expected to await the referee’s match report before deciding whether to launch a formal probe.',
+      'The dressing room message afterward was clear: leave no stone unturned and fight on to the bitter end.'
+    ]
+  },
+  magazine:{
+    edition:'THE WEEKEND ESSAY',
+    subjects:['a quiet cultural reckoning','an unspoken tension simmering beneath the surface','a deeply ingrained way of life facing a crossroads','a curious psychological phenomenon','an intricate web of private ambition','a shifting paradigm of human connection','a profound quiet revolution'],
+    actors:['writers, thinkers, and quiet observers','those who have lived through the transition','people at the very edge of the trend','curators of forgotten narratives','archivists of the everyday','voices from the periphery'],
+    places:['in the hushed corners of the city','against a backdrop of fading traditions','where the old world meets the uncertain new','amid the clatter of a changing landscape','in quiet rooms filled with accumulated history','far from the glare of the daily news cycle'],
+    issues:['the fragility of memory and place','what we lose in the rush toward efficiency','the invisible threads binding community','the private cost of public progress','the ghosts of choices made decades ago','the texture of modern alienation'],
+    verbs:['cast a long shadow across the years','settled quietly into the national consciousness','prompted a slow, deliberate reappraisal','etched itself into the collective memory','woven an intricate web of consequence','refused to be neatly categorized'],
+    hackSubjects:['a profound paradigm shift in the granularity of modern existence','a poignant reminder of the bottom line of the human heart','a sweeping cultural critique wrapped in blissful ignorance','an eleventh-hour journey into the heart of darkness','a labyrinthine exploration of an open secret'],
+    hackActors:['feature writers burning the midnight oil','critics waiting with bated breath','insiders with a wealth of experience','essayists navigating a chequered career'],
+    hackPlaces:['at the bitter end of a whirlwind tour','amid a riot of colour and confusion','deep in the pipeline of cultural analysis','where no stone has been left unturned'],
+    hackIssues:['collateral damage in the march of progress','a glaring omission in the historical record','the true colours of a gilded age','a foregone conclusion wrapped in a blessing in disguise'],
+    hackVerbs:['sent shockwaves through the literary salon','brought introspection grinding to a halt','spread like wildfire through intellectual circles','sparked off a profound existential crisis'],
+    tails:[
+      'As the light fades over another chapter, the questions remain as quiet and persistent as ever.',
+      'Whether any of this leaves a lasting imprint on the landscape is a story only time will write.',
+      'For now, the conversation drifts away into the evening air, leaving the final page unwritten.'
+    ]
+  },
+  press:{
+    edition:'EMBARGOED PRESS RELEASE',
+    subjects:['an exciting new initiative','a landmark strategic partnership','an innovative flagship programme','a transformative new approach','a bold vision for the future','a pioneering regional launch','a purpose-driven framework'],
+    actors:['project partners','delighted stakeholders','key delivery partners','sector leaders','programme organisers','senior ambassadors','founding sponsors'],
+    places:['at a special launch event','as part of an ambitious three-year strategy','across the region','following months of collaborative co-design','in a major step forward','alongside community champions'],
+    issues:['unlocking new opportunities','putting people at the heart of the process','delivering measurable impact','driving meaningful change','building on existing excellence','creating a sustainable legacy'],
+    verbs:['marked a major milestone','received a warm welcome across the sector','set a new benchmark for best practice','demonstrated a shared commitment','paved the way for future success','showcased the power of partnership'],
+    hackSubjects:['a paradigm shift in regional throughput','a major boost hammered out by sector chiefs','a whirlwind tour launching sweeping changes','a landmark bid to evaluación-proof the delivery system','an exciting new scheme already in the pipeline','a flagship launch that has garnered three awards'].map(s=>s.replace('evaluación-proof','future-proof')),
+    hackActors:['delighted bosses with a wealth of experience','sector chiefs bullish on the partnership','stakeholders evaluating their delivery system','ambassadors who vowed to leave no stone unturned','partners celebrating a riot of colour at the launch'],
+    hackPlaces:['at breakneck speed across the sector','following a marathon co-design session','as part of a sweeping paradigm shift','amid a riot of colour at the flagship hub','with a wealth of experience in the pipeline'],
+    hackIssues:['the granularity of the deal','a marked improvement in stakeholder throughput','creating a level playing field from day one','why the bottom line is a blessing in disguise','a cherished belief in corporate governance'],
+    hackVerbs:['garnered widespread acclaim across the sector','delivered a major boost to regional throughput','triggered off a paradigm shift in best practice','spread like wildfire among key stakeholders','marked a psychologically important milestone'],
+    tails:[
+      'ENDS. Notes to Editors: High-resolution photography and interview bids are available upon request from the media office.',
+      'Speaking at the launch, the chair said the board was bullish on the rollout and had already garnered three industry awards.',
+      'To learn more about the paradigm shift or inspect the granularity of the framework, visit the official programme hub.'
+    ]
+  }
+};
+
+
+
+const cliches={
+  1:[
+    'The full picture remains unclear.',
+    'Further details are expected in due course.',
+    'It is understood that discussions are continuing.',
+    'No final decision has yet been announced.',
+    'All relevant factors are understood to be under review.'
+  ],
+  2:[
+    'The move comes amid growing pressure for answers.',
+    'The issue has become a key talking point in recent days.',
+    'The announcement has been met with a mixed response.',
+    'The latest twist is likely to add fuel to an already heated debate.',
+    'Attention is now turning to what happens next.',
+    'Both sides have indicated a willingness to keep channels open.'
+  ],
+  3:[
+    'In the final analysis, a question mark hangs over the entire affair while key figures remain conspicuous by their absence.',
+    'With the situation remaining confused, critics say the official response leaves much to be desired.',
+    'Insiders say bosses are leaving no stone unturned as they burn the midnight oil on the horns of a dilemma.',
+    'Whether this eleventh-hour bid proves a blessing in disguise or the beginning of the end remains shrouded in mystery.',
+    'As emotions ran high, observers warned that moving the goalposts now would only wreak havoc before the bitter end.',
+    'For now, it is the calm before the storm as all sides await the moment of truth with bated breath.',
+    'In a brutal reminder of the stakes, sources say the saga bears all the hallmarks of a foregone conclusion.'
+  ]
+};
+
+const quoteStarts={
+  normal:[
+    '“We need to see a meaningful conversation about the way forward,”',
+    '“People want answers, and they want them sooner rather than later,”',
+    '“It is important that all options remain on the table,”',
+    '“We recognise the strength of feeling on all sides,”',
+    '“Our priority has always been to keep the conversation going,”',
+    '“There are clearly lessons to be learned from how this has unfolded,”',
+    '“Any decision must take full account of the wider picture,”',
+    '“This is about striking the right balance going forward,”'
+  ],
+  hack:[
+    '“Make no mistake, we are leaving no stone unturned in our bid to get to the bottom line,”',
+    '“To move the goalposts at the eleventh hour is nothing short of daylight robbery,”',
+    '“We are literally fighting tooth and nail to stop this jobs axe wreaking havoc,”',
+    '“In the final analysis, the lack of granularity here leaves much to be desired,”',
+    '“We have vowed to fight on to the bitter end rather than accept a foregone conclusion,”',
+    '“It is an open secret that this bungle has brought everything grinding to a halt,”',
+    '“We remain bullish that a paradigm shift is in the pipeline after our marathon talks,”',
+    '“A question mark hangs over the whole scheme and bosses have been conspicuous by their absence,”'
+  ]
+};
+
+const quoteTags={
+  normal:[
+    'a spokesperson said.',
+    'one source familiar with the situation said.',
+    'a representative told reporters.',
+    'an observer close to the process added.',
+    'a source close to the discussions said.',
+    'one insider noted last night.'
+  ],
+  hack:[
+    'one beleaguered insider vowed last night.',
+    'a spokesperson quizzed at the scene admitted.',
+    'a source close to the marathon probe revealed.',
+    'one mandarins’ representative told hacks.',
+    'a tight-lipped chief said in an eleventh-hour plea.',
+    'an insider with a wealth of experience warned.'
+  ]
+};
+
+const printHeads={
+  normal:[
+    'Fresh questions raised as {subject} {verb}',
+    'Calls grow for answers over {subject}',
+    'What next for {subject} as {actors} demand clarity?',
+    '{subjectCap} puts fresh focus on {issue}',
+    'Mixed reaction to {subject} amid calls for rethink',
+    'New twist in row over {subject} {place}'
+  ],
+  hack:[
+    'PROBE LAUNCHED: {actorsCap} in eleventh-hour bid to halt {subject}',
+    'AXE POISED: Question mark hangs over {subject} amid fresh clash',
+    'PLEA TO BOSSES: {actorsCap} vow to fight on as {subject} sparks chaos',
+    'QUIZZED: Chiefs on horns of a dilemma after {subject} {verb}',
+    'MARATHON TALKS: Sweeping changes in the pipeline as {actors} clash over {issue}',
+    'BITTER BLOW: {subjectCap} leaves {actors} waiting with bated breath'
+  ]
+};
+
+const printStnds={
+  normal:[
+    '{actorsCap} say the latest developments have highlighted {issue}, amid ongoing uncertainty {place}.',
+    'The move is already prompting a wider conversation about {issue} after {subject} {verb}.',
+    'As questions continue to mount {place}, attention is turning to {issue}.'
+  ],
+  hack:[
+    '{actorsCap} have vowed to leave no stone unturned {place} after {subject} {verb}, sparking fears of collateral damage.',
+    'In the final analysis, a question mark hangs over {issue} as beleaguered bosses face an eleventh-hour quiz.',
+    'Emotions ran high {place} last night as {actors} warned that sweeping changes could wreak havoc before the bitter end.'
+  ]
+};
+
+const broadcastHeads={
+  normal:[
+    'CUE: {subjectCap} AS {actorsCap} DEMAND ANSWERS',
+    'TOP LINE: {subjectCap} SPARKS QUESTIONS OVER {issue}',
+    'PACKAGE LEAD: GROWING PRESSURE OVER {subjectCap}'
+  ],
+  hack:[
+    'CUE: BOSSES QUIZZED OVER ELEVENTH-HOUR BID TO AXE PROBE',
+    'TOP LINE: QUESTION MARK HANGS OVER {subjectCap} AMID CHAOS',
+    'PACKAGE LEAD: CHIEFS VOW TO FIGHT ON IN BITTER CLASH'
+  ]
+};
+
+const broadcastStnds={
+  normal:[
+    '[STUDIO LEAD] Good evening. {actorsCap} are calling for clarity {place} after {subject} {verb}.',
+    '[PRESENTER CUE] First tonight, fresh questions over {issue}, as {subject} continues to divide opinion {place}.',
+    '[READER] We start {place}, where {subject} has {verb}, leaving {actors} demanding to know what happens next.'
+  ],
+  hack:[
+    '[STUDIO LEAD: HOW NOT TO WRITE FOR RADIO] Good evening. {actorsCap} have launched an eleventh-hour bid to block the axe {place}, after {subject} {verb}.',
+    '[PRESENTER CUE: MAXIMUM JOURNALESE] First tonight: bosses are being quizzed in a full-scale probe {place}, as a bitter row over {issue} threatens to wreak havoc.',
+    '[READER: TRENCHCOAT EDITION] A question mark hangs over {subject} tonight after marathon talks ground to a halt, and chiefs have vowed to leave no stone unturned.'
+  ]
+};
+
+const printLeadFrames={
+  normal:[
+    'Fresh questions over {subject} have prompted {actors} to demand clarity about {issue}, amid growing pressure for a response {place}.',
+    '{actorsCap} have called for answers after {subject} {verb} {place}, raising fresh concerns about {issue}.',
+    'A dispute over {subject} has intensified following renewed concerns about {issue}, with {actors} pressing for action.',
+    '{subjectCap} has prompted calls for an urgent rethink {place} as {actors} seek assurances over {issue}.',
+    'Growing scrutiny surrounding {subject} has {verb} {place}, leaving {actors} focused on {issue}.'
+  ],
+  hack:[
+    '{actorsCap} have launched an eleventh-hour bid to demand answers after {subject} {verb} {place}, sparking fears over {issue}.',
+    'A full-scale probe is under way {place} after {subject} {verb}, leaving {actors} on the horns of a dilemma over {issue}.',
+    'Beleaguered bosses are facing a fresh clash {place} as {subject} threatens to plunge {issue} into chaos.',
+    'A question mark hangs over {issue} tonight after {subject} {verb} {place}, prompting an urgent plea from {actors}.',
+    'After a marathon negotiating session {place}, {actors} have vowed to fight to the bitter end over {subject} and {issue}.'
+  ]
+};
+
+const printSentenceFrames={
+  normal:[
+    'The latest developments surrounding {subject} have {verb} {place}, with {actors} calling for greater clarity over {issue}.',
+    'Questions are being asked about {issue}, as {actors} seek to establish the full extent of the situation.',
+    'The intervention follows {subject}, which has {verb} and prompted a guarded response from {actors}.',
+    'While the finer details remain subject to further discussion, {actors} insist that {issue} must remain a central priority.',
+    'The situation is understood to be evolving rapidly, with a number of options reportedly under consideration {place}.',
+    'Speaking {place}, {actors} warned that any next steps would need to reflect {issue}.',
+    'The latest intervention follows a period of heightened scrutiny and comes as attention shifts towards {issue}.',
+    'Those involved say the conversation is ongoing {place}, although the precise timetable for a resolution remains unclear.',
+    'Privately, {actors} acknowledge that {subject} has highlighted deeper questions around {issue}.',
+    'Behind the scenes, efforts are continuing {place} to address {issue} before the situation escalates further.',
+    'Observers note that {subject} has already {verb}, making agreement on {issue} all the more pressing.',
+    'In a statement issued {place}, {actors} reiterated their commitment to addressing {issue} constructively.'
+  ],
+  hack:[
+    '{actorsCap} have slammed {subject}, warning that {issue} will wreak havoc.',
+    '{actorsCap} slam {subject} over {issue}, claiming the move bears all the hallmarks of a bungle.',
+    '{subjectCap} has been slammed by {actors} demanding an eleventh-hour rethink.',
+    'It emerged last night that {subject} has {verb} {place}, dealing a major blow to {actors} as they grapple with {issue}.',
+    'While an uneasy peace was brokered after marathon talks, {actors} warn that {issue} is heading for a bloody confrontation.',
+    'Combing the area for clues {place}, {actors} insist they will leave no stone unturned in their probe into {issue}.',
+    'Critics claim the handling of {subject} bears all the hallmarks of a bungle, with {issue} conspicuous by its absence.',
+    'Speaking {place}, {actors} vowed to block any bid to axe safeguards around {issue}.',
+    'The saga has centred around {subject}, which has {verb} and left {actors} literally fighting for their political lives.',
+    'With sweeping changes already in the pipeline {place}, {actors} say the moment of truth for {issue} has arrived.',
+    'Behind closed doors, {actors} have been burning the midnight oil {place} in a last-ditch effort to salvage {issue}.'
+  ]
+};
+
+const broadcastLeads={
+  normal:[
+    'There’s growing pressure for answers {place} over {subject}. {actorsCap} say they want to know what happens next.',
+    'A new row has broken out {place} over {subject} after it {verb}.',
+    'People are calling for answers about {subject}. The focus {place} is firmly on {issue}.',
+    'Tonight, there are fresh concerns about {subject}, which has {verb} {place}.'
+  ],
+  hack:[
+    '{actorsCap} have launched an eleventh-hour bid for answers {place} after {subject} {verb}, sparking a full-scale probe.',
+    'The axe is hanging over {issue} {place}, as beleaguered bosses are quizzed over {subject}.',
+    'Emotions are running high {place} tonight, where {subject} has {verb} and triggered off a bitter clash.',
+    'A question mark hangs over {subject} {place}, and {actors} have vowed to fight on to the bitter end.'
+  ]
+};
+
+const broadcastLineFrames={
+  normal:[
+    'Those involved say they’re still waiting for clarity on {issue}.',
+    'Speaking {place}, {actors} say there’s still no clear decision.',
+    'So what does {subject} actually mean for {issue}?',
+    'For now, {actors} say they’re looking closely at the options {place}.',
+    'The latest developments have {verb}, leaving people asking what happens next.',
+    '{actorsCap} say they want concrete action on {issue}, not more warm words.',
+    'Those in charge insist they’re listening to concerns raised {place}.',
+    'We still don’t know when a final decision on {subject} will be made.',
+    'There are growing questions {place} about who is responsible for {issue}.',
+    'And after {subject} {verb}, the pressure is only building.',
+    'That hasn’t put an end to the argument over {issue}.',
+    'It’s a story that {actors} say still has plenty left to run.'
+  ],
+  hack:[
+    'In the final analysis, {actors} say the official response on {issue} leaves much to be desired.',
+    'Bosses have pledged to leave no stone unturned {place} after {subject} {verb}.',
+    'So is this eleventh-hour plea a blessing in disguise, or the beginning of the end for {issue}?',
+    'Right now, the situation remains confused {place} as chiefs are quizzed over {subject}.',
+    'Critics say moving the goalposts on {issue} has brought everything grinding to a halt.',
+    '{actorsCap} have vowed to mount a last-ditch bid {place} before the axe falls.',
+    'After a marathon session behind closed doors, a settlement still hasn’t been hammered out.',
+    'And with sweeping changes in the pipeline, observers are waiting with bated breath.'
+  ]
+};
+
+const broadcastAttributions={
+  normal:[
+    'One campaigner told us people need answers on {issue} sooner rather than later.',
+    'A spokesperson says officials are looking at all the options {place}.',
+    'One person affected says the lack of clarity around {subject} is making things harder.',
+    '{actorsCap} say their priority now is to get the next steps right.',
+    'A local representative says the uncertainty over {issue} can’t go on indefinitely.',
+    'The organisation says it’s taking the concerns raised {place} very seriously.',
+    '{actorsCap} say they want a clearer timetable from those in charge.',
+    'A senior source says no final decision on {subject} has been made tonight.'
+  ],
+  hack:[
+    'One insider told us bosses are on the horns of a dilemma over {issue} and have been conspicuous by their absence.',
+    'Officers who attended the scene say two people were apprehended after {subject} {verb}.',
+    'A hospital spokesperson says one casualty is comfortable after undergoing surgery, while another is fighting for their life.',
+    '{actorsCap} have vowed to block the move in a bid to restore a level playing field.',
+    'A company chief says he remains bullish on the outcome despite concerns over the granularity of the deal.',
+    'One critic says the whole probe into {subject} is a foregone conclusion that will wreak havoc {place}.'
+  ]
+};
+
+const broadcastCliches={
+  1:[
+    'For now, the official position hasn’t changed.',
+    'There are still plenty of questions left to answer.'
+  ],
+  2:[
+    'And the row shows no sign of ending anytime soon.',
+    'It’s put the whole issue right back in the spotlight.',
+    'The pressure is now squarely on those in charge.'
+  ],
+  3:[
+    'In the final analysis, it’s the calm before the storm as all sides await the moment of truth with bated breath.',
+    'With the situation shrouded in mystery, this clash bears all the hallmarks of a row that will run and run.',
+    'And tonight, bosses are burning the midnight oil as a question mark hangs over the bottom line.'
+  ]
+};
+
+let prev='';
+
+function generate(){
+  const style=$('style').value,
+        b=banks[style],
+        count=Number($('paras').value),
+        density=Number($('density').value),
+        quotesOn=$('quotes').checked,
+        headOn=$('showHead').checked,
+        broadcast=style==='broadcast',
+        isHack=density===3;
+
+  
+
+  // At Level 3 ("Full Trenchcoat & Trilby"), blend the MHM hack banks heavily into the draw pool
+  const poolSubjects=isHack?[...b.hackSubjects,...b.hackSubjects,...b.subjects]:b.subjects;
+  const poolActors=isHack?[...b.hackActors,...b.hackActors,...b.actors]:b.actors;
+  const poolPlaces=isHack?[...b.hackPlaces,...b.hackPlaces,...b.places]:b.places;
+  const poolIssues=isHack?[...b.hackIssues,...b.hackIssues,...b.issues]:b.issues;
+  const poolVerbs=isHack?[...b.hackVerbs,...b.hackVerbs,...b.verbs]:b.verbs;
+
+  const decks={
+    subjects:makeDeck(poolSubjects),
+    actors:makeDeck(poolActors),
+    places:makeDeck(poolPlaces),
+    issues:makeDeck(poolIssues),
+    verbs:makeDeck(poolVerbs),
+    tails:makeDeck(b.tails),
+    printLeads:makeDeck(isHack?printLeadFrames.hack:printLeadFrames.normal),
+    printSentences:makeDeck(isHack?[...printSentenceFrames.hack,...printSentenceFrames.normal]:printSentenceFrames.normal),
+    quoteStarts:makeDeck(isHack?quoteStarts.hack:quoteStarts.normal),
+    quoteTags:makeDeck(isHack?quoteTags.hack:quoteTags.normal),
+    cliches:makeDeck(cliches[density]),
+    bLeads:makeDeck(isHack?broadcastLeads.hack:broadcastLeads.normal),
+    bLines:makeDeck(isHack?[...broadcastLineFrames.hack,...broadcastLineFrames.normal]:broadcastLineFrames.normal),
+    bAttrs:makeDeck(isHack?broadcastAttributions.hack:broadcastAttributions.normal),
+    bCliches:makeDeck(broadcastCliches[density]),
+    pHeads:makeDeck(isHack?printHeads.hack:printHeads.normal),
+    pStnds:makeDeck(isHack?printStnds.hack:printStnds.normal),
+    bHeads:makeDeck(isHack?broadcastHeads.hack:broadcastHeads.normal),
+    bStnds:makeDeck(isHack?broadcastStnds.hack:broadcastStnds.normal)
+  };
+
+  const fill=tpl=>tpl
+    .replace(/\{subject\}/g,()=>decks.subjects())
+    .replace(/\{subjectCap\}/g,()=>capitalize(decks.subjects()))
+    .replace(/\{actors\}/g,()=>decks.actors())
+    .replace(/\{actorsCap\}/g,()=>capitalize(decks.actors()))
+    .replace(/\{place\}/g,()=>decks.places())
+    .replace(/\{issue\}/g,()=>decks.issues())
+    .replace(/\{verb\}/g,()=>decks.verbs());
+
+  // Build Headline & Standfirst
+  const topEl=$('storyTop');
+  topEl.replaceChildren();
+  let headerCopy='';
+  if(headOn){
+    const hText=fill(broadcast?decks.bHeads():decks.pHeads());
+    const sText=fill(broadcast?decks.bStnds():decks.pStnds());
+    const hNode=document.createElement('h2');
+    hNode.className='story-headline';
+    hNode.textContent=hText;
+    const sNode=document.createElement('p');
+    sNode.className='story-standfirst';
+    sNode.textContent=sText;
+    topEl.append(hNode,sNode);
+    headerCopy=hText+'\n'+sText+'\n\n';
+  }
+
+  // Build Paragraphs
+  let paras=[];
+  for(let i=0;i<count;i++){
+    const isLast=(i===count-1 && count>1);
+    let lines=[];
+    if(broadcast){
+      if(i===0){
+        lines.push(fill(decks.bLeads()));
+        lines.push(fill(decks.bLines()));
+      } else if(isLast){
+        lines.push(fill(decks.bLines()));
+        if(density>1) lines.push(decks.bCliches());
+        lines.push(decks.tails());
+      } else {
+        lines.push(fill(decks.bLines()));
+        lines.push(fill(decks.bLines()));
+        if(quotesOn && (i===1 || i%2===1)) lines.push(fill(decks.bAttrs()));
+        if(density>1 && i%2===0) lines.push(decks.bCliches());
+        if(density===3) lines.push(fill(decks.bLines()));
+      }
+    } else {
+      if(i===0){
+        lines.push(fill(decks.printLeads()));
+        lines.push(fill(decks.printSentences()));
+      } else if(isLast){
+        lines.push(fill(decks.printSentences()));
+        if(density>1) lines.push(decks.cliches());
+        lines.push(decks.tails());
+      } else {
+        lines.push(fill(decks.printSentences()));
+        lines.push(fill(decks.printSentences()));
+        if(density===3) lines.push(fill(decks.printSentences()));
+        if(i%2===1 || density===3) lines.push(decks.cliches());
+        if(quotesOn && (i===1 || (i>1 && i%2===1))){
+          lines.splice(1,0,decks.quoteStarts()+' '+decks.quoteTags());
+        }
+      }
+    }
+    paras.push(lines.join(' '));
+  }
+
+  let candidate=headerCopy+paras.join('\n\n');
+  if(candidate===prev){
+    paras[0]=fill(broadcast?decks.bLeads():decks.printLeads())+' '+fill(broadcast?decks.bLines():decks.printSentences());
+    candidate=headerCopy+paras.join('\n\n');
+  }
+  prev=candidate;
+
+  $('headLabel').textContent=broadcast?'Include cue & studio top line':'Include headline & standfirst';
+  $('quoteLabel').textContent=broadcast?'Include attributed speech (indirect)':'Include anonymous quotes';
+  $('deskStamp').textContent=isHack?b.edition+' · TRILBY MODE':b.edition;
+  const isMagazine=style==='magazine';
+  $('paper').classList.toggle('broadcast',broadcast);
+  $('paper').classList.toggle('magazine',isMagazine);
+  $('paper').classList.remove('pop');
+  void $('paper').offsetWidth;
+  $('paper').classList.add('pop');
+  $('output').replaceChildren(...paras.map(p=>{
+    let node=document.createElement('p');
+    node.textContent=p;
+    return node;
+  }));
+}
+
+$('paras').addEventListener('input',()=>{$('parasNumber').textContent=$('paras').value;generate();});
+$('generate').addEventListener('click',generate);
+['style','density','quotes','showHead'].forEach(id=>$(id).addEventListener('change',generate));
+$('copy').addEventListener('click',async()=>{
+  try{await navigator.clipboard.writeText(prev)}
+  catch(e){
+    const a=document.createElement('textarea');
+    a.value=prev;document.body.append(a);a.select();
+    document.execCommand('copy');a.remove();
+  }
+  $('toast').classList.add('visible');
+  setTimeout(()=>$('toast').classList.remove('visible'),1700);
+});
+generate();
+</script>
+</body></html>
