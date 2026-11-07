@@ -7,7 +7,7 @@ Odds and ends for managing day-to-day uni work. Most are single HTML files: down
 | File | What it does |
 | --- | --- |
 | `mailmerge_to_customFilenameDoc.html` | Mail merge from a Word template and a spreadsheet into individually named Word docs, replacing `{{tags}}`. Handy for generating named feedback sheets. |
-| `moodles.html` | Takes a Moodle submissions zip (plus an optional grading CSV) and generates personalised feedback docs named to work with Moodle's bulk feedback upload. Tuned to MMU's Moodle; naming may differ elsewhere. |
+| `moodles.html` | Takes a Moodle submissions zip (plus an optional grading CSV) and generates personalised feedback docs named to work with Moodle's bulk feedback upload. Tuned to my Unis Moodle; naming may differ elsewhere. |
 | `moodle-feedback-helper-v3.zip` | Edge/Chrome extension that matches files in a local feedback folder to the student you're grading in Moodle, so you can drag or upload them without hunting. See below. |
 | `Turnitin_rubric_viewer.html` | Opens a Turnitin rubric (`.rbc`), lets you edit and add criteria, then save it back as `.rbc` or export it as a landscape Word doc. |
 | `powerpuller.html` | Pulls text, speaker notes and media out of a PowerPoint (`.pptx`). |
